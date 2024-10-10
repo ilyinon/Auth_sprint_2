@@ -1,0 +1,6 @@
+psycopg-binary==3.1.18
+psycopg==3.1.18
+redis==5.0.8
+elasticsearch==8.15.0
+pydantic==2.8.2
+pydantic-settings==2.4.0

@@ -1,0 +1,280 @@
+openapi: 3.0.0
+info:
+  title: Auth Service API
+  description: API для управления аутентификацией и ролями пользователей в онлайн-кинотеатре.
+  version: 1.0.0
+servers:
+  - url: http://localhost:8000
+    description: Локальный сервер
+
+paths:
+  api/v1/auth/signup:
+    post:
+      summary: Регистрация нового пользователя
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                username:
+                  type: string
+                  example: user1
+                password:
+                  type: string
+                  example: password123
+                email:
+                  type: string
+                  example: user1@example.com
+      responses:
+        '201':
+          description: Успешная регистрация
+        '400':
+          description: Ошибка валидации данных
+
+  api/v1/auth/login:
+    post:
+      summary: Аутентификация пользователя
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                username:
+                  type: string
+                  example: user1
+                password:
+                  type: string
+                  example: password123
+      responses:
+        '200':
+          description: Возвращает пару токенов
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  access_token:
+                    type: string
+                  refresh_token:
+                    type: string
+        '401':
+          description: Неверный логин или пароль
+
+  api/v1/auth/refresh:
+    post:
+      summary: Обновление access токена
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                refresh_token:
+                  type: string
+      responses:
+        '200':
+          description: Возвращает новый access токен
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  access_token:
+                    type: string
+                  refresh_token:
+                    type: string
+        '401':
+          description: Неверный или истёкший refresh токен
+
+  api/v1/auth/logout:
+    post:
+      summary: Выход из системы
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                refresh_token:
+                  type: string
+      responses:
+        '200':
+          description: Успешный выход
+        '401':
+          description: Неверный или истёкший refresh токен
+
+  api/v1/auth/history:
+    get:
+      summary: Получение истории входов пользователя
+      security:
+        - bearerAuth: []
+      responses:
+        '200':
+          description: Список входов пользователя
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  type: object
+                  properties:
+                    ip_address:
+                      type: string
+                    timestamp:
+                      type: string
+                      format: date-time
+        '401':
+          description: Неавторизованный запрос
+
+  api/v1/roles:
+    get:
+      summary: Получение списка ролей
+      security:
+        - bearerAuth: []
+      responses:
+        '200':
+          description: Список ролей
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  type: object
+                  properties:
+                    id:
+                      type: string
+                    name:
+                      type: string
+        '401':
+          description: Неавторизованный запрос
+
+    post:
+      summary: Создание новой роли
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                name:
+                  type: string
+                  example: admin
+      responses:
+        '201':
+          description: Роль создана
+        '401':
+          description: Неавторизованный запрос
+
+  api/v1/roles/{role_id}:
+    put:
+      summary: Обновление роли
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: role_id
+          in: path
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                name:
+                  type: string
+      responses:
+        '200':
+          description: Роль обновлена
+        '404':
+          description: Роль не найдена
+
+  api/v1/roles/assign:
+    post:
+      summary: Назначение роли пользователю
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                user_id:
+                  type: string
+                  example: user123
+                role_id:
+                  type: string
+                  example: admin
+      responses:
+        '200':
+          description: Роль назначена
+        '404':
+          description: Пользователь или роль не найдены
+
+  api/v1/roles/remove:
+    post:
+      summary: Отбор роли у пользователя
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                user_id:
+                  type: string
+                  example: user123
+                role_id:
+                  type: string
+                  example: admin
+      responses:
+        '200':
+          description: Роль отобрана
+        '404':
+          description: Пользователь или роль не найдены
+
+  api/v1/auth/check-permissions:
+    post:
+      summary: Проверка прав пользователя
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                user_id:
+                  type: string
+                permission:
+                  type: string
+      responses:
+        '200':
+          description: Пользователь имеет доступ
+        '403':
+          description: Доступ запрещён
+        '404':
+          description: Пользователь не найден
+
+components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT

@@ -1,0 +1,42 @@
+version: '3'
+
+services:
+  test:
+    build: tests/functional
+    env_file:
+      - ./.env_test
+    depends_on:
+      elastic:
+        condition: service_healthy
+        restart: true
+      redis:
+        condition: service_healthy
+        restart: true
+      app_test:
+        condition: service_healthy
+        restart: true
+
+  app_test:
+    build: app
+    env_file:
+      - ./.env_test
+    restart: unless-stopped
+    environment:
+      - PROJECT_NAME=${PROJECT_NAME}
+      - REDIS_HOST=${REDIS_HOST}
+      - REDIS_PORT=${REDIS_PORT}
+      - ELASTIC_HOST=${ELASTIC_HOST}
+      - ELASTIC_PORT=${ELASTIC_PORT}
+    command: uvicorn main:app --host 0.0.0.0 --port 7000
+    healthcheck:
+      test: bash -c "exec 6<> /dev/tcp/localhost/7000"
+      interval: 5s
+      timeout: 3s
+      retries: 20
+    depends_on:
+      elastic:
+        condition: service_healthy
+        restart: true
+      redis:
+        condition: service_healthy
+        restart: true
