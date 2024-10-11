@@ -18,19 +18,16 @@ COPY app/alembic /opt/alembic
 COPY app/alembic.ini /opt/
 COPY tests/core /opt/tests/core
 COPY tests/utils /opt/tests/utils
+COPY tests/alembic/env.py /opt/alembic/env.py
 
 RUN mv /opt/tests/functional/conftest.py /opt/tests/conftest.py && \
     mv /opt/tests/functional/fixtures /opt/tests/ && \
     chmod -R 755 /opt/tests && \
-    sed -i 's/core.config/tests.core.config/g' /opt/alembic/env.py && \
-    sed -i 's/app.models./tests.models./g' /opt/tests/models/* && \
-    sed -i 's/app.models./tests.models./g' /opt/alembic/env.py
-
-
-
+    sed -i 's/app.models./tests.models./g' /opt/tests/models/*
 
 ENTRYPOINT \
+  find /opt && \
   python3 tests/utils/wait_for_pg.py && \
   python3 tests/utils/wait_for_redis.py && \
-  alembic upgrade head && find /opt/ && \
+  # alembic upgrade head && find /opt/ && \
   python3 -m pytest tests -vvv --disable-warnings

@@ -3,11 +3,8 @@
 from alembic import context
 from core.config import auth_settings
 from sqlalchemy import engine_from_config, pool
-from models.base import ModelBase
-from models.user import User
-from models.role import Role, UserRole
-from models.token import Token
-from models.session import Session
+from tests.models.base import ModelBase
+
 
 config = context.config
 

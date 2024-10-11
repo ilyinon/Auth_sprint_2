@@ -8,15 +8,12 @@ aiologger==0.7.0
 Faker==30.1.0
 async-fastapi-jwt-auth==0.6.6
 SQLAlchemy-Ext==0.2
-
 asyncpg==0.29.0
 testcontainers==4.8.1
 testcontainers[postgres]
 pytest-alembic==0.11.1
 pytest-postgresql==6.1.1
 psycopg2-binary
-
-
 Werkzeug==3.0.4
 pytest_mock_resources==2.12.1
 alembic==1.13.3

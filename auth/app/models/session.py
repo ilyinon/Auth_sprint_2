@@ -1,11 +1,11 @@
-from models.base import Base
 from models.mixin import IdMixin, TimestampMixin
 from sqlalchemy import Column, ForeignKey, String
 from sqlalchemy.dialects.postgresql import UUID
 from sqlalchemy.orm import relationship
+from models.base import ModelBase
 
 
-class Session(Base, IdMixin, TimestampMixin):
+class Session(ModelBase, IdMixin, TimestampMixin):
     __tablename__ = "sessions"
 
     user_id = Column(
