@@ -11,4 +11,4 @@ class IdMixin(object):
 
 class TimestampMixin(object):
     created_at = Column(DateTime, default=datetime.now())
-    modified_at = Column(DateTime, onupdate=datetime.now())
+    modified_at = Column(DateTime, onupdate=datetime.now(), default=datetime.now())

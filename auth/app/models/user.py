@@ -1,4 +1,4 @@
-from models.base import Base
+from models.base import ModelBase
 from models.mixin import IdMixin, TimestampMixin
 from pydantic import EmailStr
 from sqlalchemy import Column, String
@@ -6,7 +6,7 @@ from sqlalchemy.orm import relationship
 from werkzeug.security import check_password_hash, generate_password_hash
 
 
-class User(Base, TimestampMixin, IdMixin):
+class User(ModelBase, TimestampMixin, IdMixin):
     __tablename__ = "users"
 
     email = Column(String, unique=True, nullable=False)

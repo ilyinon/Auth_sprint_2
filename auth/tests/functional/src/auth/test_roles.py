@@ -37,34 +37,40 @@ admin_user = {
     "username": fake.simple_profile()["username"],
 }
 
-admin_login_data = {"email": admin_user["email"], "password": admin_user["password"]}
+admin_login_data = {
+    "email": admin_user["email"], 
+    "password": admin_user["password"],
+    "full_name": admin_user["full_name"],
+    "username": admin_user["username"]
+}
 
 
 async def test_get_all_roles_wo_creds(session, get_db):
 
-    user = User(
-        email=admin_user["email"],
-        password=admin_user["password"],
-        username=admin_user["username"],
-        full_name=admin_user["full_name"],
-    )
+    user = User(email=admin_login_data["email"],
+                password=admin_login_data["password"],
+                full_name=admin_login_data["full_name"],
+                username=admin_login_data["username"])
     get_db.add(user)
     get_db.commit()
     get_db.refresh(user)
-
-    user = get_db.query(User).first()
-    # assert user.email == admin_user["email"]
+    
     async with session.get(url_roles) as response:
 
         assert response.status == http.HTTPStatus.UNPROCESSABLE_ENTITY
 
 
-async def test_get_all_roles_not_admin(session):
-    async with session.post(url_signup, json=admin_user) as response:
+async def test_get_all_roles_not_admin(session, get_db):
+    result = get_db.query(User).filter(User.email == admin_login_data["email"]).first()
+    # result = get_db.execute(select(User).where(User.email == admin_user["email"]))
+    
+
+    assert result.email == admin_login_data["email"]
+    async with session.post(url_signup, json=admin_login_data) as response:
 
         body = await response.json()
 
-    async with session.post(url_login, json=admin_user) as response:
+    async with session.post(url_login, json=admin_login_data) as response:
 
         body = await response.json()
         access_token = body["access_token"]

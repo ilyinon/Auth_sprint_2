@@ -10,11 +10,11 @@ from sqlalchemy import engine_from_config, pool
 
 config = context.config
 
-from models.base import Base
+from models.base import ModelBase
 
 config.set_main_option("sqlalchemy.url", auth_settings.database_dsn_not_async)
 
-target_metadata = Base.metadata
+target_metadata = ModelBase.metadata
 
 
 def run_migrations_offline() -> None:
