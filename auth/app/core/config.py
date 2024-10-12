@@ -36,7 +36,7 @@ class AuthSettings(BaseSettings):
 
     google_client_id: str
     google_client_secret: str
-    google_redirect_uri: str = "http://localhost:8000/api/v1/auth/login/google/callback"
+    google_redirect_uri: str = "http://localhost/api/v1/auth/login/google/callback"
 
     pg_echo: bool = False
 

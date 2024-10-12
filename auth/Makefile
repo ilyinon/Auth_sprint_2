@@ -3,7 +3,7 @@ infra:
 
 auth:
 	$(MAKE) infra
-	docker-compose -f docker-compose.yml -f docker-compose.override.yml  -f app/docker-compose.yml  up -d --build
+	docker-compose -f docker-compose.yml -f docker-compose.override.yml  -f app/docker-compose.yml -f app/docker-compose.override.yml  up -d --build
 	docker logs -f auth-app-1
 
 test:

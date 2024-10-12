@@ -1,21 +1,16 @@
-from typing import List, Optional, Union
+from typing import Optional, Union
 from uuid import UUID
 
 from fastapi import APIRouter, Depends, HTTPException, Request, status
 from fastapi.security import HTTPBearer
-from pydantic import conint
 from schemas.base import HTTPExceptionResponse, HTTPValidationError
-from schemas.role import RoleBaseUUID  # noqa
-from schemas.session import SessionResponse
 from schemas.user import UserPatch, UserResponse
 from services.auth import AuthService, get_auth_service
-from services.session import SessionService, get_session_service
 from services.user import UserService, get_user_service
 
 get_token = HTTPBearer(auto_error=False)
 
 router = APIRouter()
-
 
 
 @router.post(

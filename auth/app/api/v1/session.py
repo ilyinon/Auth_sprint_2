@@ -5,12 +5,9 @@ from fastapi import APIRouter, Depends, HTTPException, Request, status
 from fastapi.security import HTTPBearer
 from pydantic import conint
 from schemas.base import HTTPExceptionResponse, HTTPValidationError
-from schemas.role import RoleBaseUUID  # noqa
 from schemas.session import SessionResponse
-from schemas.user import UserPatch, UserResponse
 from services.auth import AuthService, get_auth_service
 from services.session import SessionService, get_session_service
-from services.user import UserService, get_user_service
 
 get_token = HTTPBearer(auto_error=False)
 
@@ -93,4 +90,3 @@ async def get_user_sessions(
             status_code=status.HTTP_401_UNAUTHORIZED, detail="Unauthorized"
         )
     raise HTTPException(status_code=status.HTTP_422_UNPROCESSABLE_ENTITY)
-

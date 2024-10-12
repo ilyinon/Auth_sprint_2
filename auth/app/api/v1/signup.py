@@ -1,26 +1,12 @@
-from typing import Annotated, Literal, Optional, Union
-from uuid import UUID
+from typing import Union
 
 from core.logger import logger
-from fastapi import APIRouter, Body, Depends, Request, Response, status
+from fastapi import APIRouter, Depends, status
 from fastapi.exceptions import HTTPException
-from fastapi.security import HTTPBearer
-from schemas.auth import TwoTokens, UserLoginModel
+from fastapi.security import HTTPBearer, OAuth2AuthorizationCodeBearer
 from schemas.base import HTTPExceptionResponse, HTTPValidationError
-from schemas.session import SessionCreate, SessionUpdate
 from schemas.user import UserCreate, UserResponse
-from services.auth import AuthService, get_auth_service
-from services.session import SessionService, get_session_service
 from services.user import UserService, get_user_service
-from urllib.parse import urlencode, parse_qs
-from fastapi.responses import RedirectResponse
-from starlette.datastructures import URL
-from starlette.config import Config
-from fastapi.security import OAuth2PasswordBearer
-from fastapi.security import OAuth2AuthorizationCodeBearer
-import httpx
-from core.config import auth_settings
-from fastapi.responses import JSONResponse
 
 get_token = HTTPBearer(auto_error=False)
 
