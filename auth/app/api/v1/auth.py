@@ -17,39 +17,20 @@ from fastapi.responses import RedirectResponse
 from starlette.datastructures import URL
 from starlette.config import Config
 from fastapi.security import OAuth2PasswordBearer
-
+from fastapi.security import OAuth2AuthorizationCodeBearer
+import httpx
+from core.config import auth_settings
+from fastapi.responses import JSONResponse
 
 get_token = HTTPBearer(auto_error=False)
-oauth2_scheme = OAuth2PasswordBearer(tokenUrl="login")
+
+oauth2_scheme = OAuth2AuthorizationCodeBearer(
+    authorizationUrl="https://accounts.google.com/o/oauth2/auth",
+    tokenUrl="https://oauth2.googleapis.com/token",
+)
 
 router = APIRouter()
 
-
-@router.post(
-    "/signup",
-    response_model=UserResponse,
-    summary="User registration",
-    responses={
-        status.HTTP_400_BAD_REQUEST: {"model": HTTPExceptionResponse},
-        status.HTTP_422_UNPROCESSABLE_ENTITY: {"model": HTTPValidationError},
-    },
-    tags=["Registration"],
-)
-async def signup(
-    user_create: UserCreate, user_service: UserService = Depends(get_user_service)
-) -> Union[UserResponse, HTTPExceptionResponse, HTTPValidationError]:
-    """
-    Register a new user.
-    """
-    logger.info(f"Requested /signup with {user_create}")
-    if not await user_service.get_user_by_email(user_create.email):
-        if not await user_service.get_user_by_username(user_create.username):
-            created_new_user = await user_service.create_user(user_create)
-            return created_new_user
-    raise HTTPException(
-        status_code=status.HTTP_400_BAD_REQUEST,
-        detail="The email or username is already in use",
-    )
 
 
 @router.post(
@@ -112,104 +93,6 @@ async def login(
         status_code=status.HTTP_401_UNAUTHORIZED, detail="Bad username or password"
     )
 
-
-@router.get(
-    "/login/google",
-    summary="OAuth w/google",
-    response_model=None,
-        responses={
-        "401": {"model": HTTPExceptionResponse},
-        "403": {"model": HTTPExceptionResponse},
-        "422": {"model": HTTPValidationError},
-    },
-    tags=["Authorization"],
-    )
-async def google_login(request: Request):
-    redirect_uri = str(URL(scheme="http", host=request.headers["host"], path="/login/google/callback"))
-    params = {
-        "client_id": config("GOOGLE_CLIENT_ID"),
-        "redirect_uri": redirect_uri,
-        "response_type": "code",
-        "scope": "openid email profile",
-    }
-    url = URL(scheme="https", host="accounts.google.com", path="/o/oauth2/v2/auth")
-    url = url.with_query(urlencode(params))
-    return RedirectResponse(url=str(url))
-
-
-@router.get(
-        "/login/google/callback",
-        summary="callback for google",
-        response_model=None,
-        responses={
-        "401": {"model": HTTPExceptionResponse},
-        "403": {"model": HTTPExceptionResponse},
-        "422": {"model": HTTPValidationError},},
-    tags=["Authorization"],
-    )
-async def google_auth_callback(
-    request: Request):
-    code = request.query_params.get("code")
-    if not code:
-        raise HTTPException(status_code=400, detail="Missing code")
-
-
-    # client_id = config("GOOGLE_CLIENT_ID")
-    # client_secret = config("GOOGLE_CLIENT_SECRET")
-    redirect_uri = str(URL(scheme="http", host=request.headers["host"], path="/login/google/callback"))
-
-    # params = {
-    #     "client_id": client_id,
-    #     "client_secret": client_secret,
-    #     "code": code,
-    #     "grant_type": "authorization_code",
-    #     "redirect_uri": redirect_uri
-    # }
-
-    # response = await http.post(
-    #     "https://oauth2.googleapis.com/token", 
-    #     data=params,
-    #     headers={"Content-Type": "application/x-www-form-urlencoded"}
-    # )
-    # response.raise_for_status()
-    # data = await response.json()
-    # access_token = data.get("access_token")
-    # if not access_token:
-    #     raise HTTPException(status_code=400, detail="Error retrieving access token")
-
-
-    # user_info_response = await http.get(
-    #     "https://www.googleapis.com/oauth2/v3/userinfo",
-    #     headers={"Authorization": f"Bearer {access_token}"}
-    # )
-
-    # user_info_response.raise_for_status()
-    # user_info = await user_info_response.json()
-
-    # email = user_info.get("email")
-    # user = db.query(User).filter(User.email == email).first()
-    # if not user:
-    #     user = User(email=email)
-    #     db.add(user)
-    #     db.commit()
-    #     db.refresh(user)
-
-
-    # access_token_expires = timedelta(minutes=ACCESS_TOKEN_EXPIRE_MINUTES)
-    # access_token = create_access_token(
-    #     data={"sub": user.email}, expires_delta=access_token_expires
-    # )
-
-
-    # response = RedirectResponse(url="/", status_code=302)
-    # response.set_cookie(
-    #     key="access_token",
-    #     value=access_token,
-    #     httponly=True,
-    #     secure=True,
-    #     samesite="lax"
-    # )
-    # return response
 
 @router.post(
     "/logout",
