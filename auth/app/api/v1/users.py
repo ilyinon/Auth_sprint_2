@@ -28,7 +28,6 @@ router = APIRouter()
     tags=["Manage sessions"],
 )
 async def delete_user_session(
-    request: Request,
     session_id: UUID,
     access_token: str = Depends(get_token),
     session_service: SessionService = Depends(get_session_service),
@@ -80,7 +79,7 @@ async def get_user_sessions(
     if access_token:
         user = await auth_service.check_access(creds=access_token.credentials)
         if user:
-            user_uuid = UUID(user.get("user_id"))
+            user_uuid = UUID(user.user_id)
             sessions = await session_service.get_sessions_by_user(user_uuid)
             if not sessions:
                 return []
@@ -197,7 +196,7 @@ async def get_user_info(
     if access_token:
         user = await auth_service.check_access(creds=access_token.credentials)
         if user:
-            user_uuid = UUID(user.get("user_id"))
+            user_uuid = UUID(user.user_id)
             user_info = await user_service.get_current_user(user_uuid)
             if not user_info:
                 raise HTTPException(
@@ -235,7 +234,7 @@ async def patch_current_user(
         user = await auth_service.check_access(creds=access_token.credentials)
         if user:
             try:
-                user_uuid = UUID(user.get("user_id"))
+                user_uuid = UUID(user.user_id)
                 updated_user = await user_service.update_user(user_uuid, body)
             except Exception as e:
                 raise HTTPException(

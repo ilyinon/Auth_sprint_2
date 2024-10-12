@@ -43,17 +43,6 @@ def upgrade() -> None:
         sa.UniqueConstraint("username"),
     )
     op.create_table(
-        "sessions",
-        sa.Column("user_id", sa.UUID(), nullable=False),
-        sa.Column("user_agent", sa.String(), nullable=True),
-        sa.Column("user_action", sa.String(), nullable=False),
-        sa.Column("id", sa.UUID(), nullable=False),
-        sa.Column("created_at", sa.DateTime(), nullable=True),
-        sa.Column("modified_at", sa.DateTime(), nullable=True),
-        sa.ForeignKeyConstraint(["user_id"], ["users.id"], ondelete="CASCADE"),
-        sa.PrimaryKeyConstraint("id"),
-    )
-    op.create_table(
         "tokens",
         sa.Column("user_id", sa.UUID(), nullable=False),
         sa.Column("access_jti", sa.UUID(), nullable=True),

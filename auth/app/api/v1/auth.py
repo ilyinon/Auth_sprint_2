@@ -234,7 +234,7 @@ async def logout(
 
         user = await auth_service.check_access(creds=access_token.credentials)
         if user:
-            user_uuid = UUID(user.get("user_id"))
+            user_uuid = UUID(user.user_id)
             session = await session_service.get_session_by_user_and_agent(
                 user_id=user_uuid, user_agent=user_agent
             )
@@ -289,14 +289,14 @@ async def refresh_tokens(
         if decoded_token and decoded_token.get("refresh"):
             if await auth_service.check_access(refresh_token):
                 user = await auth_service.get_user_by_email(
-                    decoded_token["user"]["email"]
+                    decoded_token["email"]
                 )
                 logger.info(f"get user to refresh: {user}")
 
                 if user:
                     tokens = await auth_service.refresh_tokens(refresh_token)
 
-                    user_uuid = UUID(decoded_token["user"]["user_id"])
+                    user_uuid = UUID(decoded_token["user_id"])
                     user_agent = request.headers.get("user-agent", "Unknown")
                     session = await session_service.get_session_by_user_and_agent(
                         user_id=user_uuid, user_agent=user_agent
@@ -328,19 +328,17 @@ async def refresh_tokens(
     tags=["Authorization"],
 )
 async def check_access(
-    request: Request,
     access_token: str = Depends(get_token),
     allow_roles: Optional[Literal["admin", "user"]] = None,
     auth_service: AuthService = Depends(get_auth_service),
 ) -> Optional[Union[HTTPExceptionResponse, HTTPValidationError]]:
     """
-    check access.
+    Check access by provided access_token.s
     """
-    logger.info(f"!!!!!!! {access_token} !!!!!!!!")
     if access_token:
         logger.info(f"Check access for {access_token}")
 
-        # check access with roles
+        # check access w/roles
         if allow_roles:
             is_authorized = await auth_service.check_access_with_roles(
                 access_token.credentials, allow_roles

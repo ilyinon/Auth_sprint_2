@@ -16,7 +16,7 @@ from models.user import User
 # from services.user import User
 from pydantic import EmailStr
 from redis.asyncio import Redis
-from schemas.auth import Payload, TwoTokens
+from schemas.auth import TokenPayload, TwoTokens
 from services.database import BaseDb, PostgresqlEngine
 from sqlalchemy import and_, select
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -35,20 +35,24 @@ class AuthService:
         if user:
             if user.check_password(hashed_password):
                 logger.info(f"User {email} provided the correct password")
-                r = await self.db.execute(
-                    select(Role.name).where(UserRole.user_id == user.id).join(UserRole)
-                )
-                user_roles = [role[0] for role in r.fetchall()]
-                logger.info(f"User {email} has roles {user_roles}")
-                user_data = {
-                    "email": user.email,
-                    "user_id": str(user.id),
-                    "roles": [role for role in user_roles],
-                }
+                user_data = await self.generate_user_data(user)
                 return await self.create_tokens(user, True, user_data)
 
         logger.info(f"Failed to login {email}")
         return None
+    
+    async def generate_user_data(self, user: User) -> dict:
+        r = await self.db.execute(
+            select(Role.name).where(UserRole.user_id == user.id).join(UserRole)
+        )
+        user_roles = [role[0] for role in r.fetchall()]
+        logger.info(f"User {user.email} has roles {user_roles}")
+        user_data = {
+            "email": user.email,
+            "user_id": str(user.id),
+            "roles": [role for role in user_roles],
+        }
+        return user_data
 
     async def get_user_by_email(self, email: EmailStr) -> Optional[User]:
         logger.info(f"Get user by email {email}")
@@ -59,10 +63,10 @@ class AuthService:
         self, user: User, is_exist: bool = True, user_data={}
     ) -> TwoTokens:
 
-        access_token = await self.create_token(user, user_data, False)
+        access_token = await self.create_token(user_data, False)
         logger.info(f"access token is {access_token}")
 
-        refresh_token = await self.create_token(user, user_data, True)
+        refresh_token = await self.create_token(user_data, True)
         logger.info(f"refresh token is {refresh_token}")
 
         if await self.save_token_jti_to_db(user, access_token, refresh_token):
@@ -72,7 +76,6 @@ class AuthService:
 
     async def create_token(
         self,
-        user: User,
         user_data={},
         refresh=False,
     ):
@@ -85,11 +88,12 @@ class AuthService:
 
         payload = {}
 
-        payload["user"] = user_data
-
+        payload["user_id"] = user_data["user_id"]
+        payload["email"] = user_data["email"]
+        if not refresh:
+            payload["roles"] = user_data["roles"]
         payload["exp"] = expires_time
         payload["jti"] = str(uuid4())
-
         payload["refresh"] = refresh
 
         token = jwt_auth.encode(
@@ -103,7 +107,7 @@ class AuthService:
     async def check_access(self, creds) -> None:
         logger.info(f"Check access for token {creds}")
         try:
-            result = (await self.verify_jwt(creds)).user
+            result = (await self.verify_jwt(creds))
             logger.info(f"The result is {result}")
 
         except Exception as e:
@@ -115,21 +119,21 @@ class AuthService:
         self, creds, allow_roles: list[str] = None
     ) -> None:
         logger.info(f"check {creds} against {allow_roles}")
-        user_payload = await self.check_access(creds)
-        if user_payload:
-            logger.info("check roles if allow")
-            if not user_payload.get("roles", None):
+        token_payload = await self.check_access(creds)
+        if token_payload:
+            logger.info(f"check roles for {token_payload}")
+            if token_payload.roles == []:
                 logger.info("User has no roles")
 
             else:
                 if allow_roles:
                     logger.info(f"check if user has permission is {allow_roles}")
-                    if not set(allow_roles) & set(user_payload.get("roles", "fake")):
+                    if not set(allow_roles) & set(token_payload["roles"]):
                         return False
                 return True
         return False
 
-    async def verify_jwt(self, jwtoken: str) -> bool:
+    async def verify_jwt(self, jwtoken: str) -> TokenPayload:
         logger.info("Start to verify")
         try:
             logger.info("Start to get payload from decode_jwt")
@@ -142,7 +146,7 @@ class AuthService:
             logger.info(f"Token {payload['jti']} is in blacklist")
             return None
         logger.info(f"Payload is {payload}")
-        return Payload(**payload)
+        return TokenPayload(**payload)
 
     async def decode_jwt(self, token: str) -> dict:
         logger.info("Start to decode")
@@ -164,16 +168,16 @@ class AuthService:
         if not decoded_token:
             return False
         logger.info("End session token")
-        await self.end_session(decoded_token["jti"], decoded_token["user"]["user_id"])
+        await self.end_session(decoded_token)
 
-    async def end_session(self, jti: str, user_id: str):
-        logger.info(f"End session for {jti}")
+    async def end_session(self, decoded_token: dict):
+        logger.info(f"End session for {decoded_token}")
 
-        opposite_jti = await self.get_opposite_token(user_id, jti)
+        opposite_jti = await self.get_opposite_token(decoded_token["user_id"], decoded_token["jti"])
 
         logger.info(f"opposite jti is {opposite_jti}")
         if opposite_jti:
-            await self.revoke_token(jti)
+            await self.revoke_token(decoded_token["jti"])
             await self.revoke_token(opposite_jti)
 
     async def revoke_token(self, jti: UUID):
@@ -211,14 +215,13 @@ class AuthService:
         if decoded_token:
             logger.info(f"decoded refresh token: {decoded_token}")
             logger.info("End session token")
-            await self.end_session(
-                decoded_token["jti"], decoded_token["user"]["user_id"]
-            )
-            user = await self.get_user_by_email(decoded_token["user"]["email"])
+            await self.end_session(decoded_token)
+            user = await self.get_user_by_email(decoded_token["email"])
             logger.info(f"get user to refresh: {user}")
             if user:
                 if decoded_token["refresh"]:
-                    return await self.create_tokens(user, True, decoded_token["user"])
+                    user_data = await self.generate_user_data(user)
+                    return await self.create_tokens(user, True, user_data)
         return False
 
     async def is_token_in_redis(self, refresh_token: str) -> bool:
