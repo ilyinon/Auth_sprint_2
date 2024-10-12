@@ -6,6 +6,7 @@ from alembic.config import Config
 from sqlalchemy import Column, Integer, MetaData, String, Table, create_engine
 from sqlalchemy.orm import declarative_base, sessionmaker
 from sqlalchemy.sql import text
+from tests.models.base import ModelBase
 from tests.models.user import User
 from tests.models.base import ModelBase
 from sqlalchemy.ext.declarative import declarative_base
@@ -21,11 +22,11 @@ from tests.functional.settings import test_settings
 @pytest.mark.alembic_auto_upgrade  # Добавляем маркер Alembic
 def engine():
     engine = create_engine(test_settings.database_dsn_not_async)
-    Base.metadata.create_all(engine)
+    ModelBase.metadata.create_all(bind=engine)
 
     yield engine
 
-    Base.metadata.drop_all(bind=engine)
+    # ModelBase.metadata.drop_all(bind=engine)
 
 
 @pytest.fixture(scope="session")
@@ -37,7 +38,7 @@ def tables(engine):
     command.upgrade(alembic_cfg, "head")
 
     yield
-    command.downgrade(alembic_cfg, "base")
+    # command.downgrade(alembic_cfg, "base")
 
 
 @pytest.fixture(scope="session")

@@ -1,3 +1,4 @@
+from models.base import ModelBase
 from models.mixin import IdMixin, TimestampMixin
 from pydantic import EmailStr
 from sqlalchemy import Column, String
