@@ -4,45 +4,21 @@ from uuid import UUID
 from core.logger import logger
 from fastapi import APIRouter, Body, Depends, Request, Response, status
 from fastapi.exceptions import HTTPException
-from fastapi.security import HTTPBearer
+from fastapi.security import HTTPBearer, OAuth2AuthorizationCodeBearer
 from schemas.auth import TwoTokens, UserLoginModel
 from schemas.base import HTTPExceptionResponse, HTTPValidationError
 from schemas.session import SessionCreate, SessionUpdate
-from schemas.user import UserCreate, UserResponse
 from services.auth import AuthService, get_auth_service
 from services.session import SessionService, get_session_service
-from services.user import UserService, get_user_service
 
 get_token = HTTPBearer(auto_error=False)
 
-router = APIRouter()
-
-
-@router.post(
-    "/signup",
-    response_model=UserResponse,
-    summary="User registration",
-    responses={
-        status.HTTP_400_BAD_REQUEST: {"model": HTTPExceptionResponse},
-        status.HTTP_422_UNPROCESSABLE_ENTITY: {"model": HTTPValidationError},
-    },
-    tags=["Registration"],
+oauth2_scheme = OAuth2AuthorizationCodeBearer(
+    authorizationUrl="https://accounts.google.com/o/oauth2/auth",
+    tokenUrl="https://oauth2.googleapis.com/token",
 )
-async def signup(
-    user_create: UserCreate, user_service: UserService = Depends(get_user_service)
-) -> Union[UserResponse, HTTPExceptionResponse, HTTPValidationError]:
-    """
-    Register a new user.
-    """
-    logger.info(f"Requested /signup with {user_create}")
-    if not await user_service.get_user_by_email(user_create.email):
-        if not await user_service.get_user_by_username(user_create.username):
-            created_new_user = await user_service.create_user(user_create)
-            return created_new_user
-    raise HTTPException(
-        status_code=status.HTTP_400_BAD_REQUEST,
-        detail="The email or username is already in use",
-    )
+
+router = APIRouter()
 
 
 @router.post(
@@ -129,7 +105,7 @@ async def logout(
 
         user = await auth_service.check_access(creds=access_token.credentials)
         if user:
-            user_uuid = UUID(user.get("user_id"))
+            user_uuid = UUID(user.user_id)
             session = await session_service.get_session_by_user_and_agent(
                 user_id=user_uuid, user_agent=user_agent
             )
@@ -161,13 +137,12 @@ async def logout(
     summary="Refresh tokens",
     responses={
         status.HTTP_401_UNAUTHORIZED: {"model": HTTPExceptionResponse},
-        status.HTTP_422_UNPROCESSABLE_ENTITY: {"model": HTTPValidationError},
     },
     tags=["Authorization"],
 )
 async def refresh_tokens(
-    refresh_token: Annotated[str, Body(embed=True)],
     request: Request,
+    refresh_token: Annotated[str, Body(embed=True)],
     auth_service: AuthService = Depends(get_auth_service),
     session_service: SessionService = Depends(get_session_service),
 ) -> Union[TwoTokens, HTTPExceptionResponse, HTTPValidationError]:
@@ -177,38 +152,28 @@ async def refresh_tokens(
     logger.info(f"Refresh token with token {refresh_token}")
 
     if refresh_token:
-        logger.info(f"token to refresh {refresh_token}")
-
         decoded_token = await auth_service.decode_jwt(refresh_token)
 
         if decoded_token and decoded_token.get("refresh"):
             if await auth_service.check_access(refresh_token):
-                user = await auth_service.get_user_by_email(
-                    decoded_token["user"]["email"]
-                )
+                user = await auth_service.get_user_by_email(decoded_token["email"])
                 logger.info(f"get user to refresh: {user}")
 
                 if user:
+
                     tokens = await auth_service.refresh_tokens(refresh_token)
+                    add_session = {
+                        "user_id": UUID(decoded_token["user_id"]),
+                        "user_agent": request.headers.get("user-agent", "Unknown"),
+                        "user_action": "refresh",
+                    }
 
-                    user_uuid = UUID(decoded_token["user"]["user_id"])
-                    user_agent = request.headers.get("user-agent", "Unknown")
-                    session = await session_service.get_session_by_user_and_agent(
-                        user_id=user_uuid, user_agent=user_agent
-                    )
-                    if session:
-                        await session_service.update_session(
-                            session.id,
-                            SessionUpdate(
-                                user_id=user_uuid,
-                                user_agent=user_agent,
-                                user_action="refresh",
-                            ),
-                        )
-
+                    await session_service.create_session(SessionCreate(**add_session))
                     return tokens
 
-    raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Unauthorized")
+    raise HTTPException(
+        status_code=status.HTTP_401_UNAUTHORIZED, detail="Invalid refresh token"
+    )
 
 
 @router.get(
@@ -218,32 +183,37 @@ async def refresh_tokens(
     responses={
         "401": {"model": HTTPExceptionResponse},
         "403": {"model": HTTPExceptionResponse},
-        "422": {"model": HTTPValidationError},
+        "422": {"model": HTTPExceptionResponse},
     },
     tags=["Authorization"],
 )
 async def check_access(
-    request: Request,
     access_token: str = Depends(get_token),
-    allow_roles: Literal["admin", "user"] = None,
+    allow_roles: Optional[Literal["admin", "user"]] = None,
     auth_service: AuthService = Depends(get_auth_service),
 ) -> Optional[Union[HTTPExceptionResponse, HTTPValidationError]]:
     """
-    check access.
+    Check access by provided access_token.s
     """
     if access_token:
-        logger.info(f"Check access for {access_token.credentials}")
+        logger.info(f"Check access for {access_token}")
 
+        # check access w/roles
         if allow_roles:
-            if await auth_service.check_access_with_roles(
-                creds=access_token.credentials, allow_roles=allow_roles
-            ):
+            is_authorized = await auth_service.check_access_with_roles(
+                access_token.credentials, allow_roles
+            )
+            if is_authorized:
                 return status.HTTP_200_OK
-        if not allow_roles:
-            if await auth_service.check_access(creds=access_token.credentials):
+
+        # check access w/o roles
+        else:
+            is_authorized = await auth_service.check_access(access_token.credentials)
+            if is_authorized:
                 return status.HTTP_200_OK
 
         raise HTTPException(
-            status_code=status.HTTP_401_UNAUTHORIZED, detail="Unauthorized"
+            status_code=status.HTTP_403_FORBIDDEN, detail="Access denied"
         )
-    raise HTTPException(status_code=status.HTTP_422_UNPROCESSABLE_ENTITY)
+
+    raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Unauthorized")

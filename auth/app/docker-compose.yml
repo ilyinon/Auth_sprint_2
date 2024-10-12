@@ -21,6 +21,7 @@ services:
         restart: true
       migrate:
         condition: service_completed_successfully
+    ports: []
 
   migrate:
     build: app

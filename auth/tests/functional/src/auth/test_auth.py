@@ -102,7 +102,7 @@ async def test_check_access_no_token(session):
     async with session.get(url_check_access) as response:
         await response.json()
 
-    assert response.status == http.HTTPStatus.UNPROCESSABLE_ENTITY
+    assert response.status == http.HTTPStatus.UNAUTHORIZED
 
 
 async def test_login(session):
@@ -126,7 +126,7 @@ async def test_check_access_wo_user_role(session):
     async with session.get(
         url_check_access_user, headers={"Authorization": f"Bearer {access_token}"}
     ) as response:
-        assert response.status == http.HTTPStatus.UNAUTHORIZED
+        assert response.status == http.HTTPStatus.FORBIDDEN
 
 
 async def test_check_access_wo_admin_role(session):
@@ -139,7 +139,7 @@ async def test_check_access_wo_admin_role(session):
     async with session.get(
         url_check_access_admin, headers={"Authorization": f"Bearer {access_token}"}
     ) as response:
-        assert response.status == http.HTTPStatus.UNAUTHORIZED
+        assert response.status == http.HTTPStatus.FORBIDDEN
 
 
 async def test_refresh_token(session):
@@ -175,7 +175,7 @@ async def test_refresh_token(session):
     async with session.get(
         url_check_access, headers={"Authorization": f"Bearer {access_token}"}
     ) as response:
-        assert response.status == http.HTTPStatus.UNAUTHORIZED
+        assert response.status == http.HTTPStatus.FORBIDDEN
 
 
 async def test_logout(session):
@@ -216,4 +216,4 @@ async def test_logout(session):
         url_check_access, headers={"Authorization": f"Bearer {access_token}"}
     ) as response:
         await response.json()
-        assert response.status == http.HTTPStatus.UNAUTHORIZED
+        assert response.status == http.HTTPStatus.FORBIDDEN

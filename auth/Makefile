@@ -1,9 +1,10 @@
 infra:
-	docker-compose -f docker-compose.yml up -d --build
+	docker-compose -f docker-compose.yml -f docker-compose.override.yml  up -d --build
 
 auth:
 	$(MAKE) infra
-	docker-compose -f docker-compose.yml -f app/docker-compose.yml up -d --build
+	docker-compose -f docker-compose.yml -f docker-compose.override.yml  -f app/docker-compose.yml -f app/docker-compose.override.yml  up -d --build
+	docker logs -f auth-app-1
 
 test:
 	docker-compose -f docker-compose.yml -f tests/functional/docker-compose.yml up db_test redis_test -d

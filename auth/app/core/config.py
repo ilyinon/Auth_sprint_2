@@ -34,6 +34,10 @@ class AuthSettings(BaseSettings):
     jwt_access_token_expires_in_seconds: int = 1800
     jwt_refresh_token_expires_in_days: int = 30
 
+    google_client_id: str
+    google_client_secret: str
+    google_redirect_uri: str = "http://localhost/api/v1/auth/login/google/callback"
+
     pg_echo: bool = False
 
     @property

@@ -18,6 +18,7 @@ class SessionService:
         self.db = db
 
     async def create_session(self, session_data: SessionCreate) -> Session:
+        logger.info(f"!!!!!!!!!! {session_data}")
         new_session = Session(**session_data.dict())
         return await self.db.create(new_session, Session)
 
