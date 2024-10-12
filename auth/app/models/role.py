@@ -1,18 +1,18 @@
-from models.base import Base
 from models.mixin import IdMixin, TimestampMixin
+from models.base import ModelBase
 from sqlalchemy import Column, ForeignKey, String
 from sqlalchemy.dialects.postgresql import UUID
 from sqlalchemy.orm import relationship
 
 
-class Role(Base, TimestampMixin, IdMixin):
+class Role(ModelBase, TimestampMixin, IdMixin):
     __tablename__ = "roles"
 
     name = Column(String, unique=True, nullable=False)
     users = relationship("UserRole", back_populates="role", lazy="selectin")
 
 
-class UserRole(IdMixin, TimestampMixin, Base):
+class UserRole(IdMixin, TimestampMixin, ModelBase):
     __tablename__ = "user_roles"
 
     user_id = Column(

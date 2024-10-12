@@ -53,13 +53,18 @@ async def test_get_all_roles_wo_creds(session, get_db):
     get_db.refresh(user)
 
     user = get_db.query(User).first()
-    # assert user.email == admin_user["email"]
+    assert user.email == admin_user["email"]
     async with session.get(url_roles) as response:
 
         assert response.status == http.HTTPStatus.UNPROCESSABLE_ENTITY
 
 
-async def test_get_all_roles_not_admin(session):
+async def test_get_all_roles_not_admin(session, get_db):
+
+    result = get_db.execute(select(User).where(User.email == admin_user["email"]))
+    q_admin_user = result.scalars().first()
+
+    assert q_admin_user.email == admin_user["email"]
     async with session.post(url_signup, json=admin_user) as response:
 
         body = await response.json()
