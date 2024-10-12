@@ -4,6 +4,7 @@ from pydantic import EmailStr
 from sqlalchemy import Column, String
 from sqlalchemy.orm import relationship
 from werkzeug.security import check_password_hash, generate_password_hash
+from models.base import ModelBase
 
 
 class User(ModelBase, TimestampMixin, IdMixin):

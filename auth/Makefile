@@ -6,8 +6,6 @@ auth:
 	docker-compose -f docker-compose.yml -f app/docker-compose.yml up -d --build
 
 test:
-	docker-compose -f docker-compose.yml -f tests/functional/docker-compose.yml stop db_test redis_test
-	docker-compose -f docker-compose.yml -f tests/functional/docker-compose.yml rm db_test redis_test -f
 	docker-compose -f docker-compose.yml -f tests/functional/docker-compose.yml up db_test redis_test -d
 	docker-compose -f docker-compose.yml -f tests/functional/docker-compose.yml stop test
 	docker-compose -f docker-compose.yml -f tests/functional/docker-compose.yml rm --force test
