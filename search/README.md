@@ -8,44 +8,24 @@ https://github.com/ilyinon/Async_API_sprint_2
 cp .env_test .env
 ```
 
-1. Запуск проекта
+1. Для запуска тестов необходимы redis и elastic,
 
-Первым шагом запускаем postgres, elastic и redis
+Для запуска elastic и redis
 ```bash
 make infra
 ```
 
-Вторым шагом запускаем Auth
-```bash
-make auth
-```
-
-Третьим шагом запускаем Search, сервис поиска фильмов
-```bash
-make search
-```
-
-И наконец запускаем админку
-```bash
-make admin
-```
-
-
-2. Для доступа к openapi используй пути
-```bash
-http://localhost/api/v1/auth/openapi
-http://localhost/api/v1/films/openapi
-
-```
-
-3. Для запуска тестов нужно выполнить следующую команду
+2. Для запуска тестов нужно выполнить следующую команду
 
 Для запуска тестов
 ```bash
-make test_auth
+make test
 ```
 
-Для запуска тестов
+Для просмотра результатов нужно выполнить команду
 ```bash
-make test_search
+make test_info
 ```
+
+
+Во время запуска тестов создаются временные индексы movies_test, genres_test, persons_test.
