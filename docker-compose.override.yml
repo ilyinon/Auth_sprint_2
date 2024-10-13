@@ -1,0 +1,10 @@
+services:
+  db:
+      ports: !override
+        - "5432:5432"
+  elastic:
+      ports: !override
+        - "9200:9200"
+  redis:
+      ports: !override
+        - "6379:6379"

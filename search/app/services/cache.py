@@ -10,7 +10,6 @@ logger = logging.getLogger(__name__)
 
 
 class AsyncCacheEngine(ABC):
-
     @abstractmethod
     def _generate_cache_key(self, *args: Union[str, int, UUID]) -> str:
         pass
@@ -40,14 +39,13 @@ class RedisCacheEngine(AsyncCacheEngine):
         logger.info(f"Retrieved {key} from cache")
 
         if isinstance(cached_object, bytes):
-            cached_object = cached_object.decode('utf-8')
+            cached_object = cached_object.decode("utf-8")
 
         parsed_data = json.loads(cached_object)
         if isinstance(parsed_data, list):
             return json.dumps(parsed_data)
 
         return Object.parse_raw(cached_object)
-
 
     async def put_to_cache(self, key: str, object: Any, expiration: int) -> None:
         if isinstance(object, list):

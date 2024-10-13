@@ -12,8 +12,8 @@ from redis.asyncio import Redis
 
 app = FastAPI(
     title=auth_settings.project_name,
-    docs_url="/api/openapi",
-    openapi_url="/api/openapi.json",
+    docs_url="/api/v1/auth/openapi",
+    openapi_url="/api/v1/auth/openapi.json",
     default_response_class=ORJSONResponse,
 )
 

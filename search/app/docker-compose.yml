@@ -2,8 +2,8 @@ version: '3'
 
 services:
 
-  app:
-    build: app
+  search:
+    build: search/app
     env_file:
       - ./.env
     restart: unless-stopped
@@ -25,20 +25,3 @@ services:
       redis:
         condition: service_healthy
         restart: true
-
-  nginx:
-    image: nginx:1.27.0-alpine
-    restart: unless-stopped
-    volumes:
-      - ./nginx/nginx.conf:/etc/nginx/app.conf:ro
-      - ./nginx/conf.d:/etc/nginx/conf.d:ro
-    ports:
-      - "80:80"
-    command: [nginx-debug, '-g', 'daemon off;']
-    healthcheck:
-      test: ["CMD-SHELL", "wget -O /dev/null http://localhost || exit 1"]
-      interval: 5s
-      timeout: 3s
-      retries: 10
-    depends_on:
-      - app

@@ -7,9 +7,9 @@ from fastapi.responses import ORJSONResponse
 from redis.asyncio import Redis
 
 app = FastAPI(
-    title=settings.project_name,
-    docs_url="/api/openapi",
-    openapi_url="/api/openapi.json",
+    title="Search Service",
+    docs_url="/api/v1/films/openapi",
+    openapi_url="/api/v1/films/openapi.json",
     default_response_class=ORJSONResponse,
 )
 

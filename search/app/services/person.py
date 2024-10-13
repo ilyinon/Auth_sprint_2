@@ -1,4 +1,3 @@
-import hashlib
 import json
 import logging
 from functools import lru_cache
@@ -64,7 +63,7 @@ class PersonService:
         for film in film_hits:
             # Safely access '_source' with a fallback to an empty dict
             source = film.get("_source", {})
-            
+
             # Ensure 'id' and roles lists are present
             film_id = source.get("id")
             if film_id is None:
@@ -73,9 +72,12 @@ class PersonService:
             person_film = PersonFilm(id=film_id, roles=[])
 
             # Process roles with default to empty list
-            for role_type in ['directors', 'actors', 'writers']:
+            for role_type in ["directors", "actors", "writers"]:
                 for person in source.get(role_type, []):
-                    if person["id"] == person_id and role_type[:-1] not in person_film.roles:
+                    if (
+                        person["id"] == person_id
+                        and role_type[:-1] not in person_film.roles
+                    ):
                         person_film.roles.append(role_type[:-1])  # Add role without 's'
 
             person_films.append(person_film)

@@ -5,7 +5,7 @@ from async_fastapi_jwt_auth import AuthJWT
 from core.logger import LOGGING
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
-DOTENV = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", ".env"))
+DOTENV = os.path.abspath(os.path.join(os.path.dirname(__file__), "../..", ".env"))
 
 # Применяем настройки логирования
 logging_config.dictConfig(LOGGING)
@@ -17,7 +17,7 @@ BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 class AuthSettings(BaseSettings):
     model_config = SettingsConfigDict(env_file=DOTENV)
 
-    project_name: str
+    project_name: str = "auth"
 
     redis_host: str
     redis_port: int
