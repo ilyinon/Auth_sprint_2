@@ -12,7 +12,7 @@ BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 class TestSettings(BaseSettings):
     model_config = SettingsConfigDict(env_file=DOTENV)
 
-    project_name: str
+    project_name: str = "Test Auth"
 
     redis_host: str
     redis_port: int
@@ -29,7 +29,7 @@ class TestSettings(BaseSettings):
     jwt_access_token_expires_in_seconds: int = 1800
     jwt_refresh_token_expires_in_days: int = 30
 
-    app_dsn: str = "http://app:8000"
+    app_dsn: str = "http://auth:8000"
 
     @property
     def redis_dsn(self):

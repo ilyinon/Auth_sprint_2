@@ -11,7 +11,7 @@ BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 class TestSettings(BaseSettings):
     model_config = SettingsConfigDict(env_file=DOTENV)
 
-    project_name: str
+    project_name: str = "Search test"
 
     elastic_host: str
     elastic_port: int
@@ -19,7 +19,7 @@ class TestSettings(BaseSettings):
     redis_host: str
     redis_port: int
 
-    app_host: str = "app_test"
+    app_host: str = "app_test_search"
     app_port: int = 7000
 
     film_cache_expire_in_seconds: int
