@@ -22,7 +22,7 @@ class GenreService:
         self.cache_engine = cache_engine
 
     async def get_by_id(self, genre_id: UUID) -> Genre | None:
-        genre = await self.cache_engine.get_by_id('genre', genre_id, Genre)
+        genre = await self.cache_engine.get_by_id("genre", genre_id, Genre)
 
         if not genre:
             genre_data = await self.search_engine.get_by_id(
@@ -34,7 +34,9 @@ class GenreService:
 
             genre = Genre(**genre_data)
 
-            await self.cache_engine.put_by_id('genre', genre, settings.genre_cache_expire_in_seconds)
+            await self.cache_engine.put_by_id(
+                "genre", genre, settings.genre_cache_expire_in_seconds
+            )
 
         logger.info(f"Retrieved genre: {genre}")
         return genre
@@ -60,7 +62,9 @@ class GenreService:
 
         genres = [Genre(**genre) for genre in genres_list]
 
-        await self.cache_engine.put_by_key(genres, settings.genre_cache_expire_in_seconds, *cache_key_args)
+        await self.cache_engine.put_by_key(
+            genres, settings.genre_cache_expire_in_seconds, *cache_key_args
+        )
 
         return genres
 

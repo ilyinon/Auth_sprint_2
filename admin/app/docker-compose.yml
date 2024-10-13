@@ -1,0 +1,10 @@
+services:
+
+  service:
+    build: admin
+    env_file:
+      - ./.env
+    volumes:
+      - static:/opt/app/static
+    entrypoint: /entrypoint.sh
+    restart: always

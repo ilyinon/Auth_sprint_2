@@ -2,8 +2,6 @@ from http import HTTPStatus
 from typing import Annotated, List, Literal
 from uuid import UUID
 
-from core import config
-from core.logger import logger
 from fastapi import APIRouter, Depends, HTTPException, Query
 from models.base import OrjsonBaseModel
 from pydantic import BaseModel

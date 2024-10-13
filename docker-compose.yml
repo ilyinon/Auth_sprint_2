@@ -1,0 +1,70 @@
+services:
+
+  db:
+    image: postgres:16.3-alpine
+    restart: unless-stopped
+    environment:
+      - POSTGRES_USER=${PG_USER}
+      - POSTGRES_PASSWORD=${PG_PASSWORD}
+    volumes:
+      - pg_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${PG_USER}"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+    ports: []
+
+  elastic:
+    image: docker.elastic.co/elasticsearch/elasticsearch:8.15.0
+    restart: unless-stopped
+    volumes:
+      - elastic_data:/usr/share/elasticsearch/data
+    environment:
+      - discovery.type=single-node
+      - xpack.security.enabled=false
+      - "ES_JAVA_OPTS=-Xms1g -Xmx1g"
+    healthcheck:
+      test: curl -s http://${ELASTIC_HOST}:${ELASTIC_PORT} >/dev/null || exit 1
+      interval: 5s
+      timeout: 3s
+      retries: 20
+    ports: []
+
+  redis:
+    image: redis:7.4.0
+    restart: unless-stopped
+    volumes:
+      - redis_data:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 3s
+      retries: 20
+    ports: []
+
+  nginx:
+    image: nginx:1.27.0-alpine
+    restart: unless-stopped
+    volumes:
+      - ./nginx/nginx.conf:/etc/nginx/app.conf:ro
+      - ./nginx/conf.d:/etc/nginx/conf.d:ro
+      - static:/opt/app/static
+      - media:/opt/app/media
+    ports:
+      - "80:80"
+    command: [nginx-debug, '-g', 'daemon off;']
+    healthcheck:
+      test: ["CMD-SHELL", "wget -O /dev/null http://localhost || exit 1"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+
+
+
+volumes:
+  pg_data:
+  redis_data:
+  elastic_data:
+  media:
+  static:
