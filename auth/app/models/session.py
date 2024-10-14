@@ -21,3 +21,11 @@ class Session(ModelBase, TimestampMixin):
 
     user = relationship("User", back_populates="sessions", lazy="selectin")
     session_date = Column(DateTime, default=func.now(), nullable=False)
+
+
+# CREATE TABLE sessions (
+#     id UUID PRIMARY KEY,
+#     user_id UUID NOT NULL,
+#     session_date TIMESTAMP NOT NULL,
+#     -- Other fields
+# ) PARTITION BY RANGE (session_date);  # partition by session date

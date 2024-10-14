@@ -77,7 +77,7 @@ YANDEX_TOKEN_URL = "https://oauth.yandex.ru/token"
 YANDEX_CLIENT_ID = auth_settings.yandex_client_id
 YANDEX_CLIENT_SECRET = auth_settings.yandex_client_secret
 YANDEX_REDIRECT_URI = auth_settings.yandex_redirect_uri
-YANDEX_SCOPE = "login:email login:info"
+YANDEX_SCOPE = "email"
 
 
 @router.get(
@@ -126,6 +126,73 @@ async def yandex_callback(code: str):
     logger.info(f"token_data is {token_data}")
 
     access_token = token_data.get("access_token")
+    if not access_token:
+        logger.error("Failed to retrieve access token")
+        return {"error": "Failed to retrieve access token"}
+
+    logger.info(f"You have access_token: {access_token}")
+    return {"access_token": access_token}
+
+
+VK_AUTH_URL = "https://id.vk.com/authorize"
+VK_TOKEN_URL = "https://id.vk.com/access_token"
+VK_CLIENT_ID = auth_settings.vk_client_id
+VK_CLIENT_SECRET = auth_settings.vk_client_secret
+VK_REDIRECT_URI = auth_settings.vk_redirect_uri
+VK_SCOPE = "email"
+
+
+@router.get(
+    "/login/vk",
+    summary="OAuth with VK",
+    response_model=None,
+    responses={
+        "401": {"model": HTTPExceptionResponse},
+        "403": {"model": HTTPExceptionResponse},
+        "422": {"model": HTTPValidationError},
+    },
+    tags=["Authorization"],
+)
+async def vk_login(request: Request):
+    url = (
+        f"{VK_AUTH_URL}?"
+        f"client_id={VK_CLIENT_ID}&"
+        f"redirect_uri={VK_REDIRECT_URI}&"
+        f"scope={VK_SCOPE}&"
+        f"response_type=code"
+    )
+    return RedirectResponse(url=url)
+
+
+@router.get(
+    "/login/vk/callback",
+    summary="Callback for VK",
+    response_model=None,
+    responses={
+        "401": {"model": HTTPExceptionResponse},
+        "403": {"model": HTTPExceptionResponse},
+        "422": {"model": HTTPValidationError},
+    },
+    tags=["Authorization"],
+)
+async def vk_callback(code: str):
+    async with httpx.AsyncClient() as client:
+        token_response = await client.post(
+            VK_TOKEN_URL,
+            data={
+                "client_id": VK_CLIENT_ID,
+                "client_secret": VK_CLIENT_SECRET,
+                "redirect_uri": VK_REDIRECT_URI,
+                "code": code,
+            },
+        )
+
+    logger.info(f"token_response is {token_response}")
+    token_data = token_response.json()
+    logger.info(f"token_data is {token_data}")
+
+    access_token = token_data.get("access_token")
+
     if not access_token:
         logger.error("Failed to retrieve access token")
         return {"error": "Failed to retrieve access token"}
