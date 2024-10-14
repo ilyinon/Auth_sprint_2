@@ -63,13 +63,25 @@ async def login_callback(code: str):
             },
         )
 
-    logger.info(f"token_response is {token_response}")
-    token_data = token_response.json()
-    logger.info(f"token_data is {token_data}")
+        logger.info(f"token_response is {token_response}")
+        token_data = token_response.json()
+        logger.info(f"token_data is {token_data}")
 
-    access_token = token_data.get("access_token")
-    logger.info(f"You have access_token: {access_token}")
-    return {"access_token": access_token}
+        access_token = token_data.get("access_token")
+        logger.info(f"You have access_token: {access_token}")
+
+        user_info_response = await client.get(
+            "https://www.googleapis.com/oauth2/v2/userinfo",
+            headers={"Authorization": f"Bearer {access_token}"},
+        )
+        user_info = user_info_response.json()
+        logger.info(f"User info: {user_info}")
+
+        return {
+            "access_token": access_token,
+            "email": user_info.get("email"),
+            "name": user_info.get("name"),
+        }
 
 
 YANDEX_AUTH_URL = "https://oauth.yandex.ru/authorize"
@@ -121,17 +133,29 @@ async def yandex_callback(code: str):
             },
         )
 
-    logger.info(f"token_response is {token_response}")
-    token_data = token_response.json()
-    logger.info(f"token_data is {token_data}")
+        logger.info(f"token_response is {token_response}")
+        token_data = token_response.json()
+        logger.info(f"token_data is {token_data}")
 
-    access_token = token_data.get("access_token")
-    if not access_token:
-        logger.error("Failed to retrieve access token")
-        return {"error": "Failed to retrieve access token"}
+        access_token = token_data.get("access_token")
+        if not access_token:
+            logger.error("Failed to retrieve access token")
+            return {"error": "Failed to retrieve access token"}
 
-    logger.info(f"You have access_token: {access_token}")
-    return {"access_token": access_token}
+        logger.info(f"You have access_token: {access_token}")
+
+        user_info_response = await client.get(
+        "https://login.yandex.ru/info",
+        headers={"Authorization": f"Bearer {access_token}"},
+    )
+        user_info = user_info_response.json()
+        logger.info(f"User info: {user_info}")
+
+        return {
+            "access_token": access_token,
+            "email": user_info.get("email"),
+            "name": user_info.get("name"),
+        }
 
 
 VK_AUTH_URL = "https://id.vk.com/authorize"

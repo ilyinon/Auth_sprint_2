@@ -10,6 +10,9 @@ from schemas.base import HTTPExceptionResponse, HTTPValidationError
 from schemas.session import SessionCreate, SessionUpdate
 from services.auth import AuthService, get_auth_service
 from services.session import SessionService, get_session_service
+from services.user import UserService, get_user_service
+
+from random import randint
 
 get_token = HTTPBearer(auto_error=False)
 
@@ -19,6 +22,76 @@ oauth2_scheme = OAuth2AuthorizationCodeBearer(
 )
 
 router = APIRouter()
+
+
+@router.post(
+    "/oauth_login",
+    response_model=TwoTokens,
+    summary="Login with OAuth",
+    responses={
+        status.HTTP_401_UNAUTHORIZED: {"model": HTTPExceptionResponse},
+        status.HTTP_422_UNPROCESSABLE_ENTITY: {"model": HTTPValidationError},
+    },
+    tags=["Authorization"],
+)
+async def oauth_login(
+    provider_response: dict,  # contains data from Google/Yandex
+    request: Request,
+    auth_service: AuthService = Depends(get_auth_service),
+    user_service: AuthService = Depends(get_user_service),
+    session_service: SessionService = Depends(get_session_service),
+) -> Union[TwoTokens, HTTPExceptionResponse, HTTPValidationError]:
+    """
+    Login or register a user via OAuth (Yandex/Google) and return tokens.
+    """
+    logger.info(f"OAuth login initiated with response: {provider_response}")
+
+    email = provider_response.get("email")
+    full_name = provider_response.get("name")
+    username = provider_response.get("name")
+
+    if not email:
+        raise HTTPException(
+            status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+            detail="Invalid OAuth response",
+        )
+
+    user = await auth_service.get_user_by_email(email)
+    if not user:
+        logger.info(f"Creating new user for email: {email}")
+        generated_password = randint(0, 1000000) # not secure at all
+        user = await user_service.create_user(
+            email=email,
+            password=generated_password,
+            full_name=full_name,
+            username=username,
+        )
+
+    tokens = await auth_service.create_tokens(user_id=user.id)
+
+    user_agent = request.headers.get("user-agent", "Unknown")
+    session = await session_service.get_session_by_user_and_agent(
+        user_id=user.id, user_agent=user_agent
+    )
+
+    if session:
+        await session_service.update_session(
+            session_id=session.id,
+            session_data=SessionUpdate(
+                user_id=user.id,
+                user_agent=user_agent,
+                user_action="login",
+            ),
+        )
+    else:
+        session_data = SessionCreate(
+            user_id=user.id,
+            user_agent=user_agent,
+            user_action="login",
+        )
+        await session_service.create_session(session_data)
+
+    return tokens
 
 
 @router.post(
