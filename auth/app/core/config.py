@@ -37,21 +37,29 @@ class AuthSettings(BaseSettings):
     google_client_id: str
     google_client_secret: str
     google_redirect_uri: str = "http://localhost/api/v1/auth/login/google/callback"
+    google_auth_uri: str = "https://accounts.google.com/o/oauth2/auth"
+    google_scope: str = "email"
 
     yandex_client_id: str
     yandex_client_secret: str
     yandex_redirect_uri: str = "http://localhost/api/v1/auth/login/yandex/callback"
+    yandex_auth_uri: str = "https://oauth.yandex.ru/authorize"
+    yandex_token_uri: str = "https://oauth.yandex.ru/token"
+    yandex_scope: str = "login:email login:info"
 
     vk_client_id: str
     vk_client_secret: str
     vk_redirect_uri: str = "http://localhost/api/v1/auth/login/vk/callback"
+    vk_auth_uri: str = "https://oauth.vk.com/authorize"
+    vk_token_uri: str = "https://oauth.vk.com/access_token"
+    vk_user_info_url: str = "https://api.vk.com/method/users.get"
+    vk_scope: str = "email"
 
     pg_echo: bool = False
 
     log_level: bool = False
 
     enable_tracer: bool = True
-
     jaeger_agent_host: str = "jaeger"
     jaeger_agent_port: int = 6831
 

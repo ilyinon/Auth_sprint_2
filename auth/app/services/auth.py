@@ -41,6 +41,13 @@ class AuthService:
         logger.info(f"Failed to login {email}")
         return None
 
+    async def oauth_login(self, email) -> Optional[TwoTokens]:
+        user = await self.get_user_by_email(email)
+        logger.info(f"User has the following entry in db {user}")
+        if user:
+            user_data = await self.generate_user_data(user)
+            return await self.create_tokens(user, True, user_data)
+
     async def generate_user_data(self, user: User) -> dict:
         r = await self.db.execute(
             select(Role.name).where(UserRole.user_id == user.id).join(UserRole)
