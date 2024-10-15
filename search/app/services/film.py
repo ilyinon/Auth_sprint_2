@@ -110,7 +110,7 @@ class FilmService:
             "bool": {"must": [query, {"range": {"imdb_rating": {"lte": 8}}}]}
         }
         if access_granted:
-            logger.info(f"You are granted user")
+            logger.info("You are granted user")
             query_granted = {"bool": {"must": [query]}}
 
         try:
@@ -141,14 +141,26 @@ class FilmService:
 
         return films
 
-    async def search_film(self, query, page_size, page_number):
+    async def search_film(self, access_granted, query, page_size, page_number):
         offset = (page_number - 1) * page_size
+        query_granted = {
+            "bool": {
+                "must": [
+                    {"multi_match": {"query": query}},
+                    {"range": {"imdb_rating": {"lte": 8}}},
+                ]
+            }
+        }
+
+        if access_granted:
+            query_granted = {"multi_match": {"query": query}}
+
         try:
             films_list = await self.search_engine.search(
                 index=settings.movies_index,
                 from_=offset,
                 size=page_size,
-                query={"multi_match": {"query": query}},
+                query=query_granted,
             )
         except NotFoundError:
             return None
@@ -157,7 +169,7 @@ class FilmService:
             return None
 
         logger.debug(f"Searched films {films_list}")
-        return [Film(**get_film["_source"]) for get_film in films_list["hits"]["hits"]]
+        return [Film(**get_film) for get_film in films_list]
 
 
 @lru_cache()

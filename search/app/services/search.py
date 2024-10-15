@@ -8,7 +8,6 @@ logger = logging.getLogger(__name__)
 
 
 class AsyncSearchEngine(ABC):
-
     @abstractmethod
     async def get_by_id(self, index: str, _id: str) -> Any | None:
         pass
@@ -80,5 +79,7 @@ class BaseSearch:
         size: int = None,
         sort: list[dict] = None,
     ) -> list[Any]:
+        logger.info(f"Try to search {query}")
         results = await self.search_engine.search(index, query, from_, size, sort)
+        logger.info(f"Result is {results}")
         return results

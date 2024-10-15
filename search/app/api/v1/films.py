@@ -1,14 +1,10 @@
 from http import HTTPStatus
-from typing import Annotated, List, Literal
+from typing import Annotated, List, Literal, Optional
 from uuid import UUID
 
 from core.logger import logger
-from fastapi import APIRouter, Depends, FastAPI, HTTPException, Query, status
-from fastapi.security import (
-    HTTPAuthorizationCredentials,
-    HTTPBearer,
-    OAuth2PasswordBearer,
-)
+from fastapi import APIRouter, Depends, HTTPException, Query
+from fastapi.security import HTTPBearer
 from helpers.auth import check_from_auth
 from models.base import OrjsonBaseModel
 from pydantic import BaseModel
@@ -59,22 +55,39 @@ async def films_list(
         list[Literal["imdb_rating", "-imdb_rating"]],
         Query(description="Sort by imdb_rating"),
     ] = [],
-    genre: Annotated[UUID | None, Query(description="Filter by genre UUID")] = None,
+    genre: Optional[UUID] = Query(
+        default=None, description="Фильмы с определленным жанром"
+    ),
     film_service: FilmService = Depends(get_film_service),
-    page_size: Annotated[int, Query(description="Фильмов на страницу", ge=1)] = 50,
-    page_number: Annotated[int, Query(description="Номер страницы", ge=1)] = 1,
+    page_size: int = Query(
+        default=50, description="Количество фильмов на странице", ge=1
+    ),
+    page_number: int = Query(default=1, description="Номер страницы", ge=1),
     credentials: str = Depends(get_token),
 ) -> List[FilmResponse]:
+    """
+    Get list of films with filtering by genre and sorting
+    """
+    try:
+        # Access verifing
+        access_granted = await check_from_auth(["user"], credentials)
+        logger.info(f"Access granted: {access_granted}")
 
-    access_granted = await check_from_auth(["user"], credentials)
-    logger.info(f"Access granted is {access_granted}")
-    films = await film_service.get_list(
-        access_granted, sort, genre, page_size, page_number
-    )
-    return [
-        FilmResponse(uuid=film.id, title=film.title, imdb_rating=film.imdb_rating)
-        for film in films
-    ]
+        # Getting list of films
+        films = await film_service.get_list(
+            access_granted=access_granted,
+            sort=sort,
+            genre=genre,
+            page_size=page_size,
+            page_number=page_number,
+        )
+        return [
+            FilmResponse(uuid=film.id, title=film.title, imdb_rating=film.imdb_rating)
+            for film in films
+        ]
+    except Exception as e:
+        logger.error(f"Error retrieving films: {str(e)}")
+        raise HTTPException(status_code=500, detail="Failed to retrieve films")
 
 
 @router.get(
@@ -92,7 +105,10 @@ async def search_film(
 ):
     access_granted = await check_from_auth(["user"], credentials)
 
-    films = await film_service.search_film(query, page_size, page_number)
+    films = await film_service.search_film(
+        access_granted, query, page_size, page_number
+    )
+    logger.info(f"Got the following films {films}")
     return [
         FilmResponse(uuid=film.id, title=film.title, imdb_rating=film.imdb_rating)
         for film in films
