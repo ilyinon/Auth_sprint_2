@@ -6,12 +6,6 @@ services:
     env_file:
       - ./.env_test
     depends_on:
-      elastic:
-        condition: service_healthy
-        restart: true
-      redis:
-        condition: service_healthy
-        restart: true
       app_test_search:
         condition: service_healthy
         restart: true
@@ -35,10 +29,3 @@ services:
       interval: 5s
       timeout: 3s
       retries: 20
-    depends_on:
-      elastic:
-        condition: service_healthy
-        restart: true
-      redis:
-        condition: service_healthy
-        restart: true
