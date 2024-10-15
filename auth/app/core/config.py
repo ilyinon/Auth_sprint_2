@@ -40,6 +40,13 @@ class AuthSettings(BaseSettings):
 
     pg_echo: bool = False
 
+    log_level: bool = False
+
+    enable_tracer: bool = True
+
+    jaeger_agent_host: str = "jaeger"
+    jaeger_agent_port: int = 6831
+
     @property
     def redis_dsn(self):
         return f"redis://{self.redis_host}:{self.redis_port}"

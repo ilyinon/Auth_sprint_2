@@ -8,3 +8,6 @@ services:
   redis:
       ports: !override
         - "6379:6379"
+  jaeger:
+      ports: !override
+        - "16686:16686"
