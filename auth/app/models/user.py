@@ -37,15 +37,3 @@ class User(ModelBase, TimestampMixin, IdMixin):
 
     def __repr__(self) -> str:
         return f"<User {self.email}>"
-
-
-
-# CREATE TABLE users (
-#     id UUID PRIMARY KEY,
-#     email VARCHAR UNIQUE NOT NULL,
-#     hashed_password VARCHAR NOT NULL,
-#     username VARCHAR,
-#     full_name VARCHAR,
-#     created_at TIMESTAMP DEFAULT now(),  -- Use this column for partitioning
-#     -- Other fields
-# ) PARTITION BY RANGE (created_at);  # partition by created_at to separate active and old users (archive)

@@ -84,12 +84,13 @@ async def login_callback(code: str):
         }
 
 
+
 YANDEX_AUTH_URL = "https://oauth.yandex.ru/authorize"
 YANDEX_TOKEN_URL = "https://oauth.yandex.ru/token"
 YANDEX_CLIENT_ID = auth_settings.yandex_client_id
 YANDEX_CLIENT_SECRET = auth_settings.yandex_client_secret
 YANDEX_REDIRECT_URI = auth_settings.yandex_redirect_uri
-YANDEX_SCOPE = "email"
+YANDEX_SCOPE = "login:email login:info"
 
 
 @router.get(
@@ -143,19 +144,7 @@ async def yandex_callback(code: str):
             return {"error": "Failed to retrieve access token"}
 
         logger.info(f"You have access_token: {access_token}")
-
-        user_info_response = await client.get(
-        "https://login.yandex.ru/info",
-        headers={"Authorization": f"Bearer {access_token}"},
-    )
-        user_info = user_info_response.json()
-        logger.info(f"User info: {user_info}")
-
-        return {
-            "access_token": access_token,
-            "email": user_info.get("email"),
-            "name": user_info.get("name"),
-        }
+        return {"access_token": access_token}
 
 
 VK_AUTH_URL = "https://id.vk.com/authorize"
