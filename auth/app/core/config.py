@@ -38,6 +38,14 @@ class AuthSettings(BaseSettings):
     google_client_secret: str
     google_redirect_uri: str = "http://localhost/api/v1/auth/login/google/callback"
 
+    yandex_client_id: str
+    yandex_client_secret: str
+    yandex_redirect_uri: str = "http://localhost/api/v1/auth/login/yandex/callback"
+
+    vk_client_id: str
+    vk_client_secret: str
+    vk_redirect_uri: str = "http://localhost/api/v1/auth/login/vk/callback"
+
     pg_echo: bool = False
 
     log_level: bool = False
