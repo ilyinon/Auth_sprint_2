@@ -2,8 +2,11 @@ from asyncio import run
 from uuid import UUID
 
 import typer
+from core.logger import logger
 from db.pg import async_session
 from models.role import Role, UserRole
+from models.session import Session
+from models.token import Token
 from models.user import User
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -11,12 +14,12 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 async def get_user_by_email(db: AsyncSession, email: str) -> UUID:
     result = await db.execute(select(User).where(User.email == email))
-    print(result)
+    logger.info(f"get_user_by_email: result is: {result}")
     user = result.scalars().first()
-    print(f"User is {user}")
-    if user:
-        return user.id
-    return False
+    logger.info(f"get_user_by_email: user is {user}")
+    if user is None:
+        return False
+    return user.id
 
 
 async def create_user_by_email(db: AsyncSession, email: str) -> bool:

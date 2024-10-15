@@ -2,10 +2,20 @@ from http import HTTPStatus
 from typing import Annotated, List, Literal
 from uuid import UUID
 
-from fastapi import APIRouter, Depends, HTTPException, Query
+from core.logger import logger
+from fastapi import APIRouter, Depends, FastAPI, HTTPException, Query, status
+from fastapi.security import (
+    HTTPAuthorizationCredentials,
+    HTTPBearer,
+    OAuth2PasswordBearer,
+)
+from helpers.auth import check_from_auth
 from models.base import OrjsonBaseModel
 from pydantic import BaseModel
 from services.film import FilmService, get_film_service
+
+get_token = HTTPBearer(auto_error=False)
+
 
 router = APIRouter()
 
@@ -37,6 +47,7 @@ class FilmDetailResponse(BaseModel):
     directors: List[PersonResponse]
 
 
+# @roles_required(roles_list=["user"])
 @router.get(
     "/",
     response_model=list[FilmResponse],
@@ -52,8 +63,14 @@ async def films_list(
     film_service: FilmService = Depends(get_film_service),
     page_size: Annotated[int, Query(description="Фильмов на страницу", ge=1)] = 50,
     page_number: Annotated[int, Query(description="Номер страницы", ge=1)] = 1,
+    credentials: str = Depends(get_token),
 ) -> List[FilmResponse]:
-    films = await film_service.get_list(sort, genre, page_size, page_number)
+
+    access_granted = await check_from_auth(["user"], credentials)
+    logger.info(f"Access granted is {access_granted}")
+    films = await film_service.get_list(
+        access_granted, sort, genre, page_size, page_number
+    )
     return [
         FilmResponse(uuid=film.id, title=film.title, imdb_rating=film.imdb_rating)
         for film in films
@@ -71,7 +88,10 @@ async def search_film(
     film_service: FilmService = Depends(get_film_service),
     page_size: Annotated[int, Query(description="Фильмов на страницу", ge=1)] = 50,
     page_number: Annotated[int, Query(description="Номер страницы", ge=1)] = 1,
+    credentials: str = Depends(get_token),
 ):
+    access_granted = await check_from_auth(["user"], credentials)
+
     films = await film_service.search_film(query, page_size, page_number)
     return [
         FilmResponse(uuid=film.id, title=film.title, imdb_rating=film.imdb_rating)
@@ -88,6 +108,7 @@ async def search_film(
 async def genre_details(
     film_id: UUID, film_service: FilmService = Depends(get_film_service)
 ) -> FilmDetailResponse:
+
     film_detail = await film_service.get_by_id(film_id)
 
     if not film_detail:
