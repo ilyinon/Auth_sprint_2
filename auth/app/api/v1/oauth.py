@@ -8,6 +8,7 @@ from schemas.base import HTTPExceptionResponse, HTTPValidationError
 from schemas.session import SessionCreate, SessionUpdate
 from schemas.user import UserCreate, UserResponse
 from services.auth import AuthService, get_auth_service
+from services.oauth import OAuthService, get_oauth_service
 from services.session import SessionService, get_session_service
 from services.user import UserService, get_user_service
 
@@ -19,7 +20,6 @@ oauth2_scheme = OAuth2AuthorizationCodeBearer(
 )
 
 router = APIRouter()
-
 
 
 @router.get(
@@ -53,9 +53,7 @@ async def google_login(request: Request):
 async def login_callback(
     code: str,
     request: Request,
-    auth_service: AuthService = Depends(get_auth_service),
-    user_service: UserService = Depends(get_user_service),
-    session_service: SessionService = Depends(get_session_service)
+    oauth_service: OAuthService = Depends(get_oauth_service),
 ):
     async with httpx.AsyncClient() as client:
         token_response = await client.post(
@@ -81,35 +79,9 @@ async def login_callback(
             headers={"Authorization": f"Bearer {access_token}"},
         )
         user_info = user_info_response.json()
-        logger.info(f"User info: {user_info}")
-
-        logger.info(f"User email: {user_info.get("email")}")
-
-        user = await user_service.get_user_by_email(user_info.get("email"))
-        if user:
-            add_session = {
-                        "user_id": user.id,
-                        "user_agent": request.headers.get("user-agent", "Unknown"),
-                        "user_action": "login_oauth",
-                    }
-            return await auth_service.oauth_login(user_info.get("email"))
-
-        user = await user_service.create_oauth_user(user_info.get("email"))
-
-        if user:
-            tokens =  await auth_service.oauth_login(user_info.get("email"))
-            if tokens:
-                add_session = {
-                        "user_id": user.id,
-                        "user_agent": request.headers.get("user-agent", "Unknown"),
-                        "user_action": "login_oauth",
-                    }
-                await session_service.create_session(SessionCreate(**add_session))
-                return tokens
-
-
-
-
+        user_email = user_info.get("email")
+        logger.info(f"User email: {user_email}")
+        return await oauth_service.make_oauth_login(user_email, request)
 
 
 @router.get(
@@ -180,10 +152,11 @@ async def yandex_callback(code: str):
 async def vk_login(request: Request):
 
     url = (
-    f"{auth_settings.vk_auth_uri}?"
-    f"client_id={auth_settings.vk_client_id}&"
-    f"display=page&redirect_uri={auth_settings.vk_redirect_uri}&"
-    f"response_type=code")
+        f"{auth_settings.vk_auth_uri}?"
+        f"client_id={auth_settings.vk_client_id}&"
+        f"display=page&redirect_uri={auth_settings.vk_redirect_uri}&"
+        f"response_type=code"
+    )
     return RedirectResponse(url=url)
 
 
@@ -201,30 +174,31 @@ async def vk_login(request: Request):
 async def vk_callback(code: str):
     async with httpx.AsyncClient() as client:
         response = await client.get(
-            auth_settings.vk_token_uri, params={
-            "client_id": auth_settings.vk_client_id,
-            "client_secret": auth_settings.vk_client_secret,
-            "redirect_uri": auth_settings.vk_redirect_uri,
-            "code": code,
-        }
+            auth_settings.vk_token_uri,
+            params={
+                "client_id": auth_settings.vk_client_id,
+                "client_secret": auth_settings.vk_client_secret,
+                "redirect_uri": auth_settings.vk_redirect_uri,
+                "code": code,
+            },
         )
-
 
     logger.info(f"token_response is {response}")
     data = response.json()
     if "access_token" not in data:
-        raise HTTPException(status_code=400, detail="Invalid code or no access token received")
+        raise HTTPException(
+            status_code=400, detail="Invalid code or no access token received"
+        )
     logger.info(f"token_data is {response}")
 
     access_token = data["access_token"]
     user_id = data["user_id"]
 
     async with httpx.AsyncClient() as client:
-        user_info_response = await client.get(auth_settings.vk_user_info_url, params={
-            "access_token": access_token,
-            "user_ids": user_id,
-            "v": "5.131"
-        })
+        user_info_response = await client.get(
+            auth_settings.vk_user_info_url,
+            params={"access_token": access_token, "user_ids": user_id, "v": "5.131"},
+        )
         user_info = user_info_response.json()
 
     logger.info(f"You have access_token: {user_info}")
