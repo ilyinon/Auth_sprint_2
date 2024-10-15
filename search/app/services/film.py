@@ -76,8 +76,8 @@ class FilmService:
         logger.info(f"Retrieved film: {film}")
         return film
 
-    async def get_list(self, sort, genre, page_size, page_number):
-        cache_key_args = ("films_list", page_size, page_number, sort)
+    async def get_list(self, access_granted, sort, genre, page_size, page_number):
+        cache_key_args = (f"{access_granted}_films_list", page_size, page_number, sort)
         cached_data = await self.cache_engine.get_by_key(*cache_key_args, Object=Film)
 
         if cached_data:
@@ -106,10 +106,17 @@ class FilmService:
 
         offset = (page_number - 1) * page_size
 
+        query_granted = {
+            "bool": {"must": [query, {"range": {"imdb_rating": {"lte": 8}}}]}
+        }
+        if access_granted:
+            logger.info("You are granted user")
+            query_granted = {"bool": {"must": [query]}}
+
         try:
             films_list = await self.search_engine.search(
                 index=settings.movies_index,
-                query={"bool": {"must": [query]}},
+                query=query_granted,
                 sort=[{"imdb_rating": {"order": sort_type}}],
                 from_=offset,
                 size=page_size,
@@ -134,14 +141,26 @@ class FilmService:
 
         return films
 
-    async def search_film(self, query, page_size, page_number):
+    async def search_film(self, access_granted, query, page_size, page_number):
         offset = (page_number - 1) * page_size
+        query_granted = {
+            "bool": {
+                "must": [
+                    {"multi_match": {"query": query}},
+                    {"range": {"imdb_rating": {"lte": 8}}},
+                ]
+            }
+        }
+
+        if access_granted:
+            query_granted = {"multi_match": {"query": query}}
+
         try:
             films_list = await self.search_engine.search(
                 index=settings.movies_index,
                 from_=offset,
                 size=page_size,
-                query={"multi_match": {"query": query}},
+                query=query_granted,
             )
         except NotFoundError:
             return None
@@ -150,7 +169,7 @@ class FilmService:
             return None
 
         logger.debug(f"Searched films {films_list}")
-        return [Film(**get_film["_source"]) for get_film in films_list["hits"]["hits"]]
+        return [Film(**get_film) for get_film in films_list]
 
 
 @lru_cache()

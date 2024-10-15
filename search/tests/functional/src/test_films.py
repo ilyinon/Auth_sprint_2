@@ -2,18 +2,18 @@ import http
 import random
 
 import pytest
-
 from tests.functional.settings import settings
 from tests.functional.testdata.movies import MOVIES_DATA
 
 pytestmark = pytest.mark.asyncio
+
 
 async def test_movies_search(session, es_client, movies_index_create, movies_data_load):
     url_template = "{service_url}/api/v1/films/"
     url = url_template.format(service_url=settings.app_dsn)
 
     async with session.get(url) as response:
-        
+
         body = await response.json()
 
         assert response.status == http.HTTPStatus.OK
@@ -62,7 +62,7 @@ async def test_movies_search_sort_desc(
         body = await response.json()
 
         assert response.status == http.HTTPStatus.OK
-        assert body[0]["uuid"] == "562ca232-b898-4d64-9552-c74208b740ad"
+        assert body[0]["uuid"] == "8f15d136-7d8f-4f07-9c7f-a7b9d95fe3e9"
 
 
 async def test_movies_search_too_huge_page(

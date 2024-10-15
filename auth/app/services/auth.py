@@ -40,7 +40,7 @@ class AuthService:
 
         logger.info(f"Failed to login {email}")
         return None
-    
+
     async def generate_user_data(self, user: User) -> dict:
         r = await self.db.execute(
             select(Role.name).where(UserRole.user_id == user.id).join(UserRole)
@@ -107,7 +107,7 @@ class AuthService:
     async def check_access(self, creds) -> None:
         logger.info(f"Check access for token {creds}")
         try:
-            result = (await self.verify_jwt(creds))
+            result = await self.verify_jwt(creds)
             logger.info(f"The result is {result}")
 
         except Exception as e:
@@ -121,16 +121,21 @@ class AuthService:
         logger.info(f"check {creds} against {allow_roles}")
         token_payload = await self.check_access(creds)
         if token_payload:
-            logger.info(f"check roles for {token_payload}")
+            logger.info(
+                f"check roles for {token_payload.user_id} / {token_payload.roles}"
+            )
             if token_payload.roles == []:
                 logger.info("User has no roles")
-
-            else:
                 if allow_roles:
-                    logger.info(f"check if user has permission is {allow_roles}")
-                    if not set(allow_roles) & set(token_payload["roles"]):
-                        return False
-                return True
+                    return False
+
+            if allow_roles:
+                logger.info(f"check if user has permission is {allow_roles}")
+                if set(allow_roles) & set(token_payload.roles):
+                    logger.info(
+                        f"User {token_payload.user_id} has roles token_payload.roles to access to {allow_roles}"
+                    )
+                    return True
         return False
 
     async def verify_jwt(self, jwtoken: str) -> TokenPayload:
@@ -173,7 +178,9 @@ class AuthService:
     async def end_session(self, decoded_token: dict):
         logger.info(f"End session for {decoded_token}")
 
-        opposite_jti = await self.get_opposite_token(decoded_token["user_id"], decoded_token["jti"])
+        opposite_jti = await self.get_opposite_token(
+            decoded_token["user_id"], decoded_token["jti"]
+        )
 
         logger.info(f"opposite jti is {opposite_jti}")
         if opposite_jti:

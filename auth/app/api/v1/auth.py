@@ -1,4 +1,4 @@
-from typing import Annotated, Literal, Optional, Union
+from typing import Annotated, List, Literal, LiteralString, Optional, Union
 from uuid import UUID
 
 from core.logger import logger
@@ -189,7 +189,9 @@ async def refresh_tokens(
 )
 async def check_access(
     access_token: str = Depends(get_token),
-    allow_roles: Optional[Literal["admin", "user"]] = None,
+    # Optional[Literal["admin", "user"]] = None
+    # allow_roles: Optional[Union[Literal["admin", "user"]]] = None,
+    allow_roles: Optional[str] = None,
     auth_service: AuthService = Depends(get_auth_service),
 ) -> Optional[Union[HTTPExceptionResponse, HTTPValidationError]]:
     """
@@ -200,14 +202,18 @@ async def check_access(
 
         # check access w/roles
         if allow_roles:
+            logger.info(f"allow_roles is {allow_roles}")
+            list_roles = allow_roles.split(",")
+            logger.info(f"requested verification with roles {list_roles}")
             is_authorized = await auth_service.check_access_with_roles(
-                access_token.credentials, allow_roles
+                access_token.credentials, list_roles
             )
             if is_authorized:
                 return status.HTTP_200_OK
 
         # check access w/o roles
         else:
+            logger.info("requested access only by token")
             is_authorized = await auth_service.check_access(access_token.credentials)
             if is_authorized:
                 return status.HTTP_200_OK

@@ -32,6 +32,8 @@ class EtlSettings(BaseSettings):
     genres_index: str
     persons_index: str
 
+    auth_server_url: str = "http://auth:8000/api/v1/auth/check_access"
+
     @property
     def elastic_dsn(self):
         return f"http://{self.elastic_host}:{self.elastic_port}"
