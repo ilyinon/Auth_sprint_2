@@ -16,7 +16,7 @@ BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 class EtlSettings(BaseSettings):
     model_config = SettingsConfigDict(env_file=DOTENV)
 
-    project_name: str = "search"
+    project_name: str = "search-service"
 
     elastic_host: str
     elastic_port: int
@@ -33,6 +33,13 @@ class EtlSettings(BaseSettings):
     persons_index: str
 
     auth_server_url: str = "http://auth:8000/api/v1/auth/check_access"
+
+    log_level: bool = False
+
+    enable_tracer: bool = True
+
+    jaeger_agent_host: str = "jaeger"
+    jaeger_agent_port: int = 6831
 
     @property
     def elastic_dsn(self):

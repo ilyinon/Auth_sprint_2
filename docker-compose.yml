@@ -60,6 +60,12 @@ services:
       timeout: 3s
       retries: 10
 
+  jaeger:
+    image: jaegertracing/all-in-one:1.62.0
+    restart: unless-stopped
+    ports: []
+
+
 
 
 volumes:
