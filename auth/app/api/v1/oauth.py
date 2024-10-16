@@ -1,19 +1,16 @@
+import urllib.parse
+
 import httpx
+import requests
 from core.config import auth_settings
 from core.logger import logger
 from fastapi import APIRouter, Depends, HTTPException, Request
 from fastapi.responses import RedirectResponse
 from fastapi.security import HTTPBearer, OAuth2AuthorizationCodeBearer
+from schemas.auth import TwoTokens
 from schemas.base import HTTPExceptionResponse, HTTPValidationError
-from schemas.session import SessionCreate, SessionUpdate
-from schemas.user import UserCreate, UserResponse
-from services.auth import AuthService, get_auth_service
 from services.oauth import OAuthService, get_oauth_service
-from services.session import SessionService, get_session_service
-from services.user import UserService, get_user_service
 from utils.generate_string import generate_string
-import requests
-import urllib.parse
 
 get_token = HTTPBearer(auto_error=False)
 
@@ -45,7 +42,7 @@ async def google_login(request: Request):
 @router.get(
     "/login/google/callback",
     summary="callback for google",
-    response_model=None,
+    response_model=TwoTokens,
     responses={
         "401": {"model": HTTPExceptionResponse},
         "403": {"model": HTTPExceptionResponse},
@@ -107,7 +104,7 @@ async def yandex_login(request: Request):
 @router.get(
     "/login/yandex/callback",
     summary="Callback for Yandex",
-    response_model=None,
+    response_model=TwoTokens,
     responses={
         "401": {"model": HTTPExceptionResponse},
         "403": {"model": HTTPExceptionResponse},
@@ -115,7 +112,11 @@ async def yandex_login(request: Request):
     },
     tags=["Authorization"],
 )
-async def yandex_callback(code: str):
+async def yandex_callback(
+    code: str,
+    request: Request,
+    oauth_service: OAuthService = Depends(get_oauth_service),
+):
     async with httpx.AsyncClient() as client:
         token_response = await client.post(
             auth_settings.yandex_token_uri,
@@ -137,8 +138,16 @@ async def yandex_callback(code: str):
             logger.error("Failed to retrieve access token")
             return {"error": "Failed to retrieve access token"}
 
-        logger.info(f"You have access_token: {access_token}")
-        return {"access_token": access_token}
+        params = {"oauth_token": access_token, "format": "json"}
+        encoded_params = urllib.parse.urlencode(params)
+        full_url = f"{auth_settings.yandex_user_info_url}?{encoded_params}"
+        logger.info(f"full url: {full_url}")
+
+        response = requests.get(full_url)
+        data = response.json()
+        logger.info(f"email: {data["default_email"]}")
+
+        return await oauth_service.make_oauth_login(data["default_email"], request)
 
 
 @router.get(
@@ -153,29 +162,28 @@ async def yandex_callback(code: str):
     tags=["Authorization"],
 )
 async def vk_login(request: Request):
-    #https://example-app.com/pkce
+    # https://example-app.com/pkce
     state = generate_string()
     code_verifier = "3a96f295cfac52f3c773807516640aea82332e4532a3b8ee6c07969f"
-    code_challenge="imQqAF9Wcln0pBYnaXulli6JutiG6qbAXG70VlLZo80"
-    code_challenge_method="s256"
-    #content-type: application/x-www-form-urlencoded
+    code_challenge = "imQqAF9Wcln0pBYnaXulli6JutiG6qbAXG70VlLZo80"
+    code_challenge_method = "s256"
+    # content-type: application/x-www-form-urlencoded
 
     client_id = {auth_settings.vk_client_id}
     redirect_uri = {auth_settings.vk_redirect_uri}
-    scope = 'email phone'
+    scope = "email phone"
     state = state
     code_challenge = code_challenge
-    code_challenge_method = 's256'
-
+    code_challenge_method = "s256"
 
     url = auth_settings.vk_auth_url
     params = {
-        'response_type': 'code',
-        'client_id': client_id,
-        'redirect_uri': redirect_uri,
-        'state': state,
-        'code_challenge': code_challenge,
-        'code_challenge_method': code_challenge_method
+        "response_type": "code",
+        "client_id": client_id,
+        "redirect_uri": redirect_uri,
+        "state": state,
+        "code_challenge": code_challenge,
+        "code_challenge_method": code_challenge_method,
     }
     encoded_params = urllib.parse.urlencode(params)
     full_url = f"{url}?{encoded_params}"

@@ -45,6 +45,7 @@ class AuthSettings(BaseSettings):
     yandex_redirect_uri: str = "http://localhost/api/v1/auth/login/yandex/callback"
     yandex_auth_uri: str = "https://oauth.yandex.ru/authorize"
     yandex_token_uri: str = "https://oauth.yandex.ru/token"
+    yandex_user_info_url: str = "https://login.yandex.ru/info"
     yandex_scope: str = "login:email login:info"
 
     vk_client_id: str
