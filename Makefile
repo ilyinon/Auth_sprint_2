@@ -21,6 +21,21 @@ search: search_dir
 search_dir:
 	@:
 
+admin: admin_dir
+	$(MAKE) infra
+	docker-compose -f docker-compose.yml -f docker-compose.override.yml \
+	-f admin/app/docker-compose.yml -f admin/app/docker-compose.override.yml \
+	up -d --build
+	docker logs -f auth_sprint_2-admin-1
+
+admin_dir:
+	@:
+
+admin_init: 
+	source .env
+ 	export PGPASSWORD=${PG_PASSWORD}
+	#psql -h localhost -U ${PG_USER}  < admin/database_dump.sql
+
 test_auth:
 	docker-compose -f docker-compose.yml -f auth/tests/functional/docker-compose.yml stop db_test_auth redis_test_auth
 	docker-compose -f docker-compose.yml -f auth/tests/functional/docker-compose.yml rm db_test_auth redis_test_auth -f
