@@ -145,9 +145,10 @@ async def yandex_callback(
 
         response = requests.get(full_url)
         data = response.json()
-        logger.info(f"email: {data["default_email"]}")
+        email = data["default_email"]
+        logger.info(f"email: email")
 
-        return await oauth_service.make_oauth_login(data["default_email"], request)
+        return await oauth_service.make_oauth_login(email, request)
 
 
 @router.get(
