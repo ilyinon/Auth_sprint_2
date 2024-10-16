@@ -5,3 +5,4 @@ split-settings==1.0.0
 uwsgi==2.0.26
 django-debug-toolbar==4.4.6
 django-cors-headers==4.4.0
+requests==2.32.3

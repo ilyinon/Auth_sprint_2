@@ -71,7 +71,10 @@ MIDDLEWARE += [
     'django.contrib.auth.middleware.AuthenticationMiddleware',
     'django.contrib.messages.middleware.MessageMiddleware',
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
+    'config.middleware.auth_middleware.RoleCheckMiddleware',
 ]
+
+AUTH_SERVER_URL = "http://auth:8000/api/v1/auth/check_access"
 
 ROOT_URLCONF = 'config.urls'
 
