@@ -31,7 +31,7 @@ admin: admin_dir
 admin_dir:
 	@:
 
-admin_init: 
+admin_init:
 	source .env
  	export PGPASSWORD=${PG_PASSWORD}
 	#psql -h localhost -U ${PG_USER}  < admin/database_dump.sql
