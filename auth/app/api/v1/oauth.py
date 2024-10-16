@@ -11,6 +11,9 @@ from services.auth import AuthService, get_auth_service
 from services.oauth import OAuthService, get_oauth_service
 from services.session import SessionService, get_session_service
 from services.user import UserService, get_user_service
+from utils.generate_string import generate_string
+import requests
+import urllib.parse
 
 get_token = HTTPBearer(auto_error=False)
 
@@ -150,14 +153,41 @@ async def yandex_callback(code: str):
     tags=["Authorization"],
 )
 async def vk_login(request: Request):
+    #https://example-app.com/pkce
+    state = generate_string()
+    code_verifier = "3a96f295cfac52f3c773807516640aea82332e4532a3b8ee6c07969f"
+    code_challenge="imQqAF9Wcln0pBYnaXulli6JutiG6qbAXG70VlLZo80"
+    code_challenge_method="s256"
+    #content-type: application/x-www-form-urlencoded
 
-    url = (
-        f"{auth_settings.vk_auth_uri}?"
-        f"client_id={auth_settings.vk_client_id}&"
-        f"display=page&redirect_uri={auth_settings.vk_redirect_uri}&"
-        f"response_type=code"
-    )
-    return RedirectResponse(url=url)
+    client_id = {auth_settings.vk_client_id}
+    redirect_uri = {auth_settings.vk_redirect_uri}
+    scope = 'email phone'
+    state = state
+    code_challenge = code_challenge
+    code_challenge_method = 's256'
+
+
+    url = auth_settings.vk_auth_url
+    params = {
+        'response_type': 'code',
+        'client_id': client_id,
+        'redirect_uri': redirect_uri,
+        'state': state,
+        'code_challenge': code_challenge,
+        'code_challenge_method': code_challenge_method
+    }
+    encoded_params = urllib.parse.urlencode(params)
+    full_url = f"{url}?{encoded_params}"
+    logger.info(f"full url: {full_url}")
+
+    response = requests.get(full_url)
+    if response.status_code == 200:
+        return response.url
+    else:
+        return response.text
+
+    # return RedirectResponse(url=url)
 
 
 @router.get(

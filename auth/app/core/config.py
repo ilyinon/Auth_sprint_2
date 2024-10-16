@@ -50,7 +50,7 @@ class AuthSettings(BaseSettings):
     vk_client_id: str
     vk_client_secret: str
     vk_redirect_uri: str = "http://localhost/api/v1/auth/login/vk/callback"
-    vk_auth_uri: str = "https://oauth.vk.com/authorize"
+    vk_auth_url: str = "https://id.vk.com/auth"
     vk_token_uri: str = "https://oauth.vk.com/access_token"
     vk_user_info_url: str = "https://api.vk.com/method/users.get"
     vk_scope: str = "email"
