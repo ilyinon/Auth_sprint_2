@@ -2,7 +2,6 @@ import http
 
 import pytest
 from faker import Faker
-
 from tests.functional.settings import test_settings
 
 pytestmark = pytest.mark.asyncio

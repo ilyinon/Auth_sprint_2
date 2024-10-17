@@ -3,16 +3,23 @@ from uuid import UUID, uuid4
 import pytest
 from alembic import command
 from alembic.config import Config
-from sqlalchemy import Column, Integer, MetaData, String, Table, create_engine
+from sqlalchemy import (
+    Column,
+    Integer,
+    MetaData,
+    String,
+    Table,
+    create_engine,
+    delete,
+    select,
+)
+from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.orm import declarative_base, sessionmaker
 from sqlalchemy.sql import text
 from tests.models.base import ModelBase
-from tests.models.user import User
-from tests.models.base import ModelBase
 from tests.models.role import Role
 from tests.models.session import Session
-from sqlalchemy.ext.declarative import declarative_base
-from sqlalchemy import select, delete
+from tests.models.user import User
 
 Base = declarative_base()
 
@@ -29,7 +36,6 @@ def engine():
     yield engine
 
     # ModelBase.metadata.drop_all(bind=engine)
-
 
 
 @pytest.fixture(scope="session")
@@ -53,6 +59,6 @@ def get_db(engine, tables):
         yield db
     except Exception as e:
         db.rollback()
-        raise e 
+        raise e
     finally:
         db.close()
