@@ -1,0 +1,53 @@
+
+
+@startuml
+:Пользователь:  --> (Load Balancers)
+
+node "Load Balancers" {
+  [Nginx1..N] 
+
+}
+
+node "Search Engine" {
+  [Search App]
+}
+
+node "Auth Engine" {
+  [Auth App]
+}
+
+node "Adminka" {
+  [Adminka App]
+}
+
+
+
+
+
+[Nginx1..N] --> [Search App]
+[Nginx1..N] --> [Auth App]
+[Nginx1..N] --> [Adminka App]
+[Search App] --> [Auth App]
+[Adminka App] --> [Auth App]
+
+
+
+
+
+database "Postgres" {
+  [Auth DB]
+  [Content DB]
+}
+
+database "Elastic" {
+}
+
+database "Redis" {
+}
+
+[Adminka App] --> [Content DB]
+[Search App] --> [Elastic]
+[Search App] --> [Redis]
+[Auth App] --> [Auth DB]
+[Auth App] --> [Redis]
+@enduml

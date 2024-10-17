@@ -45,9 +45,9 @@ class UserService:
     async def create_oauth_user(self, email: str) -> UserResponse:
         user_create = {}
         user_create["email"] = email
-        user_create[
-            "username"
-        ] = f"cinema_{str(datetime.timestamp(datetime.now())).split('.')[0]}"
+        user_create["username"] = (
+            f"cinema_{str(datetime.timestamp(datetime.now())).split('.')[0]}"
+        )
         user_create["full_name"] = f"{email.split('@')[0]}"
         user_create["password"] = generate_password()
         logger.info(f"Oauth generated {user_create}")

@@ -5,6 +5,7 @@ Revises: f19105242932
 Create Date: 2024-10-11 19:38:22.282228
 
 """
+
 from typing import Sequence, Union
 
 from alembic import op
@@ -12,15 +13,15 @@ import sqlalchemy as sa
 
 
 # revision identifiers, used by Alembic.
-revision: str = '15a5d4acd787'
-down_revision: Union[str, None] = 'f19105242932'
+revision: str = "15a5d4acd787"
+down_revision: Union[str, None] = "f19105242932"
 branch_labels: Union[str, Sequence[str], None] = None
 depends_on: Union[str, Sequence[str], None] = None
 
 
 def upgrade() -> None:
     op.execute(
-            """
+        """
             CREATE TABLE sessions (
                 id UUID NOT NULL,
                 user_id UUID NOT NULL,
@@ -53,5 +54,5 @@ def upgrade() -> None:
 
 def downgrade() -> None:
     op.execute("DROP FUNCTION create_sessions_partition(DATE);")
-    op.drop_table('sessions')
+    op.drop_table("sessions")
     # ### end Alembic commands ###

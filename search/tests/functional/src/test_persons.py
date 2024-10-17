@@ -8,8 +8,14 @@ from tests.functional.testdata.persons import PERSONS_DATA
 
 pytestmark = pytest.mark.asyncio
 
+
 async def test_persons_search(
-    session, es_client, persons_index_create, persons_data_load, movies_index_create, movies_data_load
+    session,
+    es_client,
+    persons_index_create,
+    persons_data_load,
+    movies_index_create,
+    movies_data_load,
 ):
     url_template = (
         "{service_url}/api/v1/persons/search?page_size=50&page_number=1&query=James"
@@ -25,7 +31,12 @@ async def test_persons_search(
 
 
 async def test_get_person_by_id(
-    session, es_client, persons_index_create, persons_data_load, movies_index_create, movies_data_load
+    session,
+    es_client,
+    persons_index_create,
+    persons_data_load,
+    movies_index_create,
+    movies_data_load,
 ):
     url_template = "{service_url}/api/v1/persons/{id}/"
     id = PERSONS_DATA[random.randrange(len(PERSONS_DATA))]["id"]
@@ -37,7 +48,12 @@ async def test_get_person_by_id(
 
 
 async def test_get_person_films_by_id(
-    session, es_client, persons_index_create, persons_data_load, movies_index_create, movies_data_load
+    session,
+    es_client,
+    persons_index_create,
+    persons_data_load,
+    movies_index_create,
+    movies_data_load,
 ):
     url_template = "{service_url}/api/v1/persons/{id}/film"
     id = PERSONS_DATA[random.randrange(len(PERSONS_DATA))]["id"]
@@ -63,7 +79,9 @@ async def test_get_persons_by_not_existen_id(
 
 
 async def test_get_persons_with_id_invalid(
-        session, es_client, persons_index_create,
+    session,
+    es_client,
+    persons_index_create,
 ):
     url_template = "{service_url}/api/v1/persons/{id}/"
     id = "not_valid_uuid"
@@ -75,16 +93,19 @@ async def test_get_persons_with_id_invalid(
 
 
 async def test_persons_search_invalid(
-    session, es_client, persons_index_create, persons_data_load, movies_index_create, movies_data_load
+    session,
+    es_client,
+    persons_index_create,
+    persons_data_load,
+    movies_index_create,
+    movies_data_load,
 ):
-    url_template = (
-        "{service_url}/api/v1/persons/search?this_search_not_existen"
-    )
+    url_template = "{service_url}/api/v1/persons/search?this_search_not_existen"
     url = url_template.format(service_url=settings.app_dsn)
 
     async with session.get(url) as response:
 
         body = await response.json()
-        
+
         assert response.status == http.HTTPStatus.OK
         assert body == []

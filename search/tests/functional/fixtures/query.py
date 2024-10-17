@@ -39,12 +39,14 @@ def es_client():
     yield es_client
     es_client.close()
 
+
 @pytest.fixture(scope="session")
 def redis_client():
     redis_client = Redis.from_url(settings.redis_dsn)
 
     yield redis_client
     redis_client.close()
+
 
 @pytest.fixture
 def movies_index_create(es_client):

@@ -5,6 +5,7 @@ import aiohttp
 import pytest
 import pytest_asyncio
 
+
 @pytest_asyncio.fixture(scope="session")
 async def session():
     session = aiohttp.ClientSession()
