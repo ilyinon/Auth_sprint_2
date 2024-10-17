@@ -3,12 +3,14 @@ https://github.com/ilyinon/Auth_sprint_2
 ```
 
 
-## 0. При настройке интеграции с остальными компонентами нужно корректно заполнить .env, для дев проекта можно скопировать из .env_test.
+### 0. Подготовка переменных
+
+При настройке интеграции с остальными компонентами нужно корректно заполнить .env, для дев проекта можно скопировать из .env_test.
 ```bash
 cp .env_test .env
 ```
 
-## 1. Запуск проекта
+### 1. Запуск проекта
 
 Первым шагом запускаем postgres, elastic и redis
 ```bash
@@ -40,7 +42,7 @@ docker-compose exec -ti app python cli/manage.py
 ```
 
 
-## 2. Для доступа к openapi используй пути
+### 2. Для доступа к openapi используй пути
 ```bash
 http://localhost/api/v1/auth/openapi
 http://localhost/api/v1/films/openapi
@@ -53,7 +55,7 @@ http://localhost/admin
 ```
 
 
-## 3. Для запуска тестов нужно выполнить следующие команду
+### 3. Для запуска тестов нужно выполнить следующие команду
 
 Для запуска тестов auth
 ```bash
@@ -66,7 +68,7 @@ make test_search
 ```
 
 
-## 4. Общая схема:
+### 4. Общая схема:
 
 
 ![Image alt](https://github.com/ilyinon/Auth_sprint_2/raw/dev_prepare_for_review_1/schema.png)
