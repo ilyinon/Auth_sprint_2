@@ -25,9 +25,18 @@ make auth
 make search
 ```
 
-И наконец запускаем админку
+И наконец запускаем админку, создаём таблицу content
+```bash
+make admin_init
+```
+
 ```bash
 make admin
+```
+
+добавить админа
+```bash
+docker-compose exec -ti app python cli/manage.py
 ```
 
 
@@ -36,6 +45,11 @@ make admin
 http://localhost/api/v1/auth/openapi
 http://localhost/api/v1/films/openapi
 
+```
+
+для доступа к админке
+```bash
+http://localhost/admin
 ```
 
 3. Для запуска тестов нужно выполнить следующую команду
@@ -49,3 +63,5 @@ make test_auth
 ```bash
 make test_search
 ```
+
+
