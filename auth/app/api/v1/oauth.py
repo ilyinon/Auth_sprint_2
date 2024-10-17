@@ -184,7 +184,8 @@ async def vk_login(request: Request):
         "code_verifier": code_verifier,
         "code_challenge": code_challenge,
         "code_challenge_method": code_challenge_method,
-        "scope": "email",
+        "scope": "email phone",
+        "prompt": "consent"
     }
     encoded_params = urllib.parse.urlencode(params)
     full_url = f"{url}?{encoded_params}"
@@ -236,13 +237,13 @@ async def vk_callback(
 
         logger.info(f"data is data")
 
-    id_token = data["id_token"]
+    access_token = data["access_token"]
 
     async with httpx.AsyncClient() as client:
         user_info_response = await client.post(
             url=auth_settings.vk_user_info_url,
             data={
-                "id_token": id_token,
+                "access_token": access_token,
                 "client_id": auth_settings.vk_client_id,
             },
             headers=headers,
@@ -250,6 +251,5 @@ async def vk_callback(
         user_info = user_info_response.json()
     # return user_info
     email = user_info["user"]["email"]
-    return email
     logger.info(f"You have email: {email}")
     return await oauth_service.make_oauth_login(email, request)
