@@ -8,6 +8,7 @@ from sqlalchemy.dialects.postgresql import UUID
 from sqlalchemy.orm import relationship
 from models.base import ModelBase
 
+
 class Token(ModelBase, IdMixin):
     __tablename__ = "tokens"
 

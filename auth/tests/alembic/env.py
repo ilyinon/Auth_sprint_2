@@ -9,7 +9,6 @@ from tests.models.base import ModelBase
 config = context.config
 
 
-
 target_metadata = ModelBase.metadata
 config.set_main_option("sqlalchemy.url", auth_settings.database_dsn_not_async)
 

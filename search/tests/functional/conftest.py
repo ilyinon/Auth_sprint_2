@@ -1,2 +1,1 @@
-pytest_plugins = ["tests.fixtures.session",
-                  "tests.fixtures.query"]
+pytest_plugins = ["tests.fixtures.session", "tests.fixtures.query"]

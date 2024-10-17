@@ -185,7 +185,7 @@ async def vk_login(request: Request):
         "code_challenge": code_challenge,
         "code_challenge_method": code_challenge_method,
         "scope": "email phone",
-        "prompt": "consent"
+        "prompt": "consent",
     }
     encoded_params = urllib.parse.urlencode(params)
     full_url = f"{url}?{encoded_params}"
