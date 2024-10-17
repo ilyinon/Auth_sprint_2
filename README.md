@@ -52,6 +52,7 @@ http://localhost/api/v1/films/openapi
 http://localhost/admin
 ```
 
+
 3. Для запуска тестов нужно выполнить следующую команду
 
 Для запуска тестов
@@ -65,6 +66,7 @@ make test_search
 ```
 
 
-Общая схема:
-![Image alt](https://github.com/ilyinon/Auth_sprint_2/raw/dev_prepare_for_review_1/schema.png)
+4. Общая схема:
 
+
+![Image alt](https://github.com/ilyinon/Auth_sprint_2/raw/dev_prepare_for_review_1/schema.png)
