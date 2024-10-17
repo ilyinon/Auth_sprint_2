@@ -2,10 +2,6 @@
 https://github.com/ilyinon/Auth_sprint_2
 ```
 
-Общая схема:
-![Image alt](https://github.com/ilyinon/Auth_sprint_2/raw/dev_prepare_for_review_1/schema.png)
-
-
 
 0. При настройке интеграции с остальными компонентами нужно корректно заполнить .env, для дев проекта можно скопировать из .env_test.
 ```bash
@@ -67,3 +63,8 @@ make test_auth
 ```bash
 make test_search
 ```
+
+
+Общая схема:
+![Image alt](https://github.com/ilyinon/Auth_sprint_2/raw/dev_prepare_for_review_1/schema.png)
+
