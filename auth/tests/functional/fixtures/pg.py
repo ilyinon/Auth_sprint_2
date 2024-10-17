@@ -9,9 +9,10 @@ from sqlalchemy.sql import text
 from tests.models.base import ModelBase
 from tests.models.user import User
 from tests.models.base import ModelBase
+from tests.models.role import Role
+from tests.models.session import Session
 from sqlalchemy.ext.declarative import declarative_base
-
-
+from sqlalchemy import select, delete
 
 Base = declarative_base()
 
@@ -22,11 +23,13 @@ from tests.functional.settings import test_settings
 @pytest.mark.alembic_auto_upgrade  # Добавляем маркер Alembic
 def engine():
     engine = create_engine(test_settings.database_dsn_not_async)
+
     ModelBase.metadata.create_all(bind=engine)
 
     yield engine
 
     # ModelBase.metadata.drop_all(bind=engine)
+
 
 
 @pytest.fixture(scope="session")
@@ -38,6 +41,7 @@ def tables(engine):
     command.upgrade(alembic_cfg, "head")
 
     yield
+
     # command.downgrade(alembic_cfg, "base")
 
 
@@ -47,5 +51,8 @@ def get_db(engine, tables):
     db = SessionLocal()
     try:
         yield db
+    except Exception as e:
+        db.rollback()
+        raise e 
     finally:
         db.close()

@@ -25,14 +25,14 @@ url_login = auth_url_template.format(
 )
 
 
-user = {
-    "email": fake.email(),
-    "password": fake.password(),
-    "full_name": fake.name(),
-    "username": fake.simple_profile()["username"],
-}
+# user = {
+#     "email": fake.email(),
+#     "password": fake.password(),
+#     "full_name": fake.name(),
+#     "username": fake.simple_profile()["username"],
+# }
 
-login_data = {"email": user["email"], "password": user["password"]}
+# login_data = {"email": user["email"], "password": user["password"]}
 
 
 async def test_get_user_profile_wo_creds(session):
@@ -41,12 +41,12 @@ async def test_get_user_profile_wo_creds(session):
         assert response.status == http.HTTPStatus.UNPROCESSABLE_ENTITY
 
 
-async def test_get_user_profile(session):
-    async with session.post(url_signup, json=user) as response:
+async def test_get_user_profile(session, user_login_data):
+    async with session.post(url_signup, json=user_login_data) as response:
 
         body = await response.json()
 
-    async with session.post(url_login, json=user) as response:
+    async with session.post(url_login, json=user_login_data) as response:
 
         body = await response.json()
         access_token = body["access_token"]
@@ -59,12 +59,12 @@ async def test_get_user_profile(session):
     assert response.status == http.HTTPStatus.OK
 
 
-async def test_update_user_profile(session):
-    async with session.post(url_signup, json=user) as response:
+async def test_update_user_profile(session, user_login_data):
+    async with session.post(url_signup, json=user_login_data) as response:
 
         body = await response.json()
 
-    async with session.post(url_login, json=user) as response:
+    async with session.post(url_login, json=user_login_data) as response:
 
         body = await response.json()
         access_token = body["access_token"]
@@ -94,7 +94,7 @@ async def test_update_user_profile(session):
 
     assert body["username"] == new_username
 
-    login_data["password"] = new_passord
+    user_login_data["password"] = new_passord
     # async with session.post(url_login, json=login_data) as response:
 
     #     body = await response.json()
