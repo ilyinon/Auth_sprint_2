@@ -165,13 +165,13 @@ async def yandex_callback(
 async def vk_login(request: Request):
     # https://example-app.com/pkce
     state = generate_string()
-    code_verifier = "3a96f295cfac52f3c773807516640aea82332e4532a3b8ee6c07969f"
-    code_challenge = "imQqAF9Wcln0pBYnaXulli6JutiG6qbAXG70VlLZo80"
+    code_verifier = "e6be27b0a2b616b77c432f2baf7abdb95ecd064dd97e90c1dbd381da"
+    code_challenge = "oOCWcELRm1m6JkISl0IL2tyLOWul_CtIhoy8B8a34RM"
     code_challenge_method = "s256"
     # content-type: application/x-www-form-urlencoded
 
-    client_id = {auth_settings.vk_client_id}
-    redirect_uri = {auth_settings.vk_redirect_uri}
+    client_id = auth_settings.vk_client_id
+    redirect_uri = auth_settings.vk_redirect_uri
     scope = "email phone"
     state = state
     code_challenge = code_challenge
@@ -183,20 +183,16 @@ async def vk_login(request: Request):
         "client_id": client_id,
         "redirect_uri": redirect_uri,
         "state": state,
+        "code_verifier": code_verifier,
         "code_challenge": code_challenge,
         "code_challenge_method": code_challenge_method,
+        "scopes": "email",
     }
     encoded_params = urllib.parse.urlencode(params)
     full_url = f"{url}?{encoded_params}"
     logger.info(f"full url: {full_url}")
 
-    response = requests.get(full_url)
-    if response.status_code == 200:
-        return response.url
-    else:
-        return response.text
-
-    # return RedirectResponse(url=url)
+    return RedirectResponse(url=full_url)
 
 
 @router.get(
@@ -210,35 +206,52 @@ async def vk_login(request: Request):
     },
     tags=["Authorization"],
 )
-async def vk_callback(code: str):
+async def vk_callback(
+    code: str,
+    device_id: str,
+    request: Request,
+    oauth_service: OAuthService = Depends(get_oauth_service),
+):
+    code_verifier = "e6be27b0a2b616b77c432f2baf7abdb95ecd064dd97e90c1dbd381da"
+
+    logger.info("START TO CALLBACK")
+    logger.info(f"code: {code}")
+    logger.info(f"request: {request}")
+
+    params = {
+        "grant_type": "authorization_code",
+        "code": code,
+        "code_verifier": code_verifier,
+        "device_id": device_id,
+        "redirect_uri": auth_settings.vk_redirect_uri,
+        "client_id": auth_settings.vk_client_id,
+    }
+    headers = {"Content-Type": "application/x-www-form-urlencoded"}
+
+    logger.info(f"!!!!! params: {params}")
+
     async with httpx.AsyncClient() as client:
-        response = await client.get(
-            auth_settings.vk_token_uri,
-            params={
+        response = await client.post(
+            url=auth_settings.vk_token_uri, data=params, headers=headers
+        )
+        data = response.json()
+
+        logger.info(f"access_token response is {data["access_token"]}")
+
+    id_token = data["id_token"]
+
+    async with httpx.AsyncClient() as client:
+        user_info_response = await client.post(
+            url=auth_settings.vk_user_info_url,
+            data={
+                "id_token": id_token,
                 "client_id": auth_settings.vk_client_id,
-                "client_secret": auth_settings.vk_client_secret,
-                "redirect_uri": auth_settings.vk_redirect_uri,
-                "code": code,
             },
-        )
-
-    logger.info(f"token_response is {response}")
-    data = response.json()
-    if "access_token" not in data:
-        raise HTTPException(
-            status_code=400, detail="Invalid code or no access token received"
-        )
-    logger.info(f"token_data is {response}")
-
-    access_token = data["access_token"]
-    user_id = data["user_id"]
-
-    async with httpx.AsyncClient() as client:
-        user_info_response = await client.get(
-            auth_settings.vk_user_info_url,
-            params={"access_token": access_token, "user_ids": user_id, "v": "5.131"},
+            headers=headers,
         )
         user_info = user_info_response.json()
-
-    logger.info(f"You have access_token: {user_info}")
-    return user_info
+    # return user_info
+    email = user_info["user"]["email"]
+    return email
+    logger.info(f"You have email: {email}")
+    return await oauth_service.make_oauth_login(email, request)
