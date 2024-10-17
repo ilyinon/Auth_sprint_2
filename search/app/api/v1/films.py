@@ -52,14 +52,13 @@ class FilmDetailResponse(BaseModel):
 )
 @roles_required(roles_list=["user"])
 async def films_list(
+    access_granted: bool,
     sort: List[Literal["imdb_rating", "-imdb_rating"]] = Query([]),
     genre: Optional[UUID] = Query(None, description="Фильмы с определленным жанром"),
     film_service: FilmService = Depends(get_film_service),
     page_size: int = Query(default=50, description="Количество фильмов на странице", ge=1),
     page_number: int = Query(default=1, description="Номер страницы", ge=1),
 ) -> List[FilmResponse]:
-    
-    access_granted = True
     
     films = await film_service.get_list(
         sort=sort,
@@ -81,13 +80,12 @@ async def films_list(
 )
 @roles_required(roles_list=["user"])
 async def search_film(
+    access_granted: bool,
     query: Annotated[str, Query(description="Запрос")],
     film_service: FilmService = Depends(get_film_service),
     page_size: Annotated[int, Query(description="Фильмов на страницу", ge=1)] = 50,
     page_number: Annotated[int, Query(description="Номер страницы", ge=1)] = 1,
 ):
-    
-    access_granted = True
 
     films = await film_service.search_film(access_granted, query, page_size, page_number)
     logger.info(f"Got the following films {films}")

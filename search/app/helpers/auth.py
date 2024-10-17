@@ -7,6 +7,7 @@ from core.config import settings
 
 get_token = HTTPBearer(auto_error=False)
 
+
 async def check_from_auth(
     allow_roles: list,
     credentials: str,
@@ -25,14 +26,16 @@ async def check_from_auth(
                 return True
     return False
 
+
 # Decorator to check user's access
 def roles_required(roles_list: List[str]):
     def decorator(func: Callable):
         @wraps(func)
         async def wrapper(*args, credentials: str = Depends(get_token), **kwargs):
             access_granted = await check_from_auth(roles_list, credentials)
-            if not access_granted:
-                raise HTTPException(status_code=403, detail="You are not authorized to access this resource")
+            kwargs["access_granted"] = access_granted
             return await func(*args, **kwargs)
+
         return wrapper
+
     return decorator
