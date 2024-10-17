@@ -63,5 +63,3 @@ make test_auth
 ```bash
 make test_search
 ```
-
-
