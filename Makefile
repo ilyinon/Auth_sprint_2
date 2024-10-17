@@ -32,9 +32,9 @@ admin_dir:
 	@:
 
 admin_init:
-	source .env
- 	export PGPASSWORD=${PG_PASSWORD}
-	#psql -h localhost -U ${PG_USER}  < admin/database_dump.sql
+	. .env
+	export PGPASSWORD=${PG_PASSWORD}
+	psql -h localhost -U ${PG_USER} < admin/database_dump.sql
 
 test_auth:
 	docker-compose -f docker-compose.yml -f auth/tests/functional/docker-compose.yml stop db_test_auth redis_test_auth
