@@ -1,4 +1,5 @@
 import logging
+from datetime import datetime
 from functools import lru_cache
 from typing import Optional
 from uuid import UUID
@@ -12,6 +13,7 @@ from pydantic import EmailStr
 from schemas.user import UserCreate, UserPatch, UserResponse, UserResponseLogin
 from services.database import BaseDb, PostgresqlEngine
 from sqlalchemy.ext.asyncio import AsyncSession
+from utils.generate_password import generate_password
 
 logger = logging.getLogger(__name__)
 
@@ -36,6 +38,20 @@ class UserService:
 
     async def create_user(self, user_create: UserCreate) -> UserResponse:
         user = User(**user_create.dict())
+        logger.info(f"Creating a new user with data: {user_create}")
+        new_user = await self.db.create(user, User)
+        return UserResponse.from_orm(new_user)
+
+    async def create_oauth_user(self, email: str) -> UserResponse:
+        user_create = {}
+        user_create["email"] = email
+        user_create[
+            "username"
+        ] = f"cinema_{str(datetime.timestamp(datetime.now())).split('.')[0]}"
+        user_create["full_name"] = f"{email.split('@')[0]}"
+        user_create["password"] = generate_password()
+        logger.info(f"Oauth generated {user_create}")
+        user = User(**user_create)
         logger.info(f"Creating a new user with data: {user_create}")
         new_user = await self.db.create(user, User)
         return UserResponse.from_orm(new_user)
