@@ -168,11 +168,9 @@ async def vk_login(request: Request):
     code_verifier = "e6be27b0a2b616b77c432f2baf7abdb95ecd064dd97e90c1dbd381da"
     code_challenge = "oOCWcELRm1m6JkISl0IL2tyLOWul_CtIhoy8B8a34RM"
     code_challenge_method = "s256"
-    # content-type: application/x-www-form-urlencoded
 
     client_id = auth_settings.vk_client_id
     redirect_uri = auth_settings.vk_redirect_uri
-    scope = "email phone"
     state = state
     code_challenge = code_challenge
     code_challenge_method = "s256"
@@ -186,7 +184,7 @@ async def vk_login(request: Request):
         "code_verifier": code_verifier,
         "code_challenge": code_challenge,
         "code_challenge_method": code_challenge_method,
-        "scopes": "email",
+        "scope": "email",
     }
     encoded_params = urllib.parse.urlencode(params)
     full_url = f"{url}?{encoded_params}"
@@ -236,7 +234,7 @@ async def vk_callback(
         )
         data = response.json()
 
-        logger.info(f"access_token response is {data["access_token"]}")
+        logger.info(f"data is data")
 
     id_token = data["id_token"]
 
