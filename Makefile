@@ -21,6 +21,26 @@ search: search_dir
 search_dir:
 	@:
 
+admin: admin_dir
+	$(MAKE) infra
+	docker-compose -f docker-compose.yml -f docker-compose.override.yml \
+	-f admin/app/docker-compose.yml -f admin/app/docker-compose.override.yml \
+	up -d --build
+
+admin_dir:
+	@:
+
+admin_init:
+	. .env
+	export PGPASSWORD=${PG_PASSWORD}
+	psql -h localhost -U ${PG_USER} < admin/init_database.sql
+	$(MAKE) admin
+
+admin_loaddata:
+	. .env
+	export PGPASSWORD=${PG_PASSWORD}
+	psql -h localhost -U ${PG_USER} content < admin/load_data.sql
+
 test_auth:
 	docker-compose -f docker-compose.yml -f auth/tests/functional/docker-compose.yml stop db_test_auth redis_test_auth
 	docker-compose -f docker-compose.yml -f auth/tests/functional/docker-compose.yml rm db_test_auth redis_test_auth -f
@@ -44,6 +64,13 @@ all:
 	$(MAKE) search
 	$(MAKE) admin
 
+
+remove:
+	docker-compose -f docker-compose.yml stop db
+	docker-compose -f docker-compose.yml rm db -f
+	docker volume rm auth_sprint_2_pg_data
+	docker stop auth_sprint_2-admin-1
+	docker rm auth_sprint_2-admin-1
 stop:
 	docker-compose -f docker-compose.yml -f auth/app/docker-compose.yml \
 	-f search/app/docker-compose.yml -f admin/app/docker-compose.yml down

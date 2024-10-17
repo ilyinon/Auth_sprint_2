@@ -1,0 +1,4 @@
+services:
+  admin:
+    ports: !override
+      - "8002:8000"
