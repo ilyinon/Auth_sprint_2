@@ -71,4 +71,4 @@ make test_search
 ### 4. Общая схема:
 
 
-![Image alt](https://github.com/ilyinon/Auth_sprint_2/raw/dev_prepare_for_review_1/schema.png)
+![Image alt](https://github.com/ilyinon/Auth_sprint_2/raw/main/schema.png)
