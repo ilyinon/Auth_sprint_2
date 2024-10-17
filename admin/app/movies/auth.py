@@ -1,5 +1,6 @@
 import base64
 import json
+from typing import Any, Dict
 
 import httpx
 from config.settings import AUTH_API_LOGIN_URL
@@ -25,8 +26,10 @@ class CinemaBackend(BaseBackend):
         print(f"token_response: {token_response}")
 
         if token_response.status_code == httpx.codes.OK:
-
-            token_data = token_response.json()
+            try:
+                token_data = token_response.json()
+            except:
+                return None
 
             print(f"{token_data.get("access_token")}")
             data = decode_token(token_data.get("access_token"))
@@ -65,7 +68,15 @@ class CinemaBackend(BaseBackend):
             return None
 
 
-def decode_token(token: str) -> dict:
-    encoded_payload = token.split(".")[1]
-    data = json.loads(base64.b64decode(encoded_payload + "=="))
-    return data
+def decode_token(token: str) -> dict[str, Any]:
+    try:
+        # Get the part with token
+        encoded_payload = token.split(".")[1]
+        # Add bytes for correct decoding
+        decoded_bytes = base64.b64decode(encoded_payload + "==")
+        data = json.loads(decoded_bytes)
+        return data
+    except (IndexError, ValueError) as e:
+        raise ValueError("Token wrong format") from e
+    except json.JSONDecodeError as e:
+        raise ValueError("Erorr during JSON decoding") from e

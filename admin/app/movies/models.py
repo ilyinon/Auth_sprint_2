@@ -10,16 +10,16 @@ from django.utils.translation import gettext_lazy as _
 
 
 class UserManager(BaseUserManager):
-    def create_user(self, email, password=None):
+    def create_user(self, email: str, password: str = None) -> "User":
         if not email:
-            raise ValueError("User has to have this field")
+            raise ValueError(_("User must provide an email address."))
 
         user = self.model(email=email)
         user.set_password(password)
         user.save(using=self._db)
         return user
 
-    def create_superuser(self, email, password=None):
+    def create_superuser(self, email: str, password: str = None) -> "User":
         user = self.create_user(email, password=password)
         user.is_staff = True
         user.save(using=self._db)
@@ -28,7 +28,7 @@ class UserManager(BaseUserManager):
 
 class User(AbstractBaseUser):
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
-    email = models.CharField(verbose_name=_("email"), max_length=199, unique=True)
+    email = models.EmailField(verbose_name=_("email"), unique=True)
     is_active = models.BooleanField(default=True)
     is_staff = models.BooleanField(default=False)
 
@@ -39,16 +39,16 @@ class User(AbstractBaseUser):
     class Meta:
         db_table = 'content"."user'
         verbose_name = _("user")
-        verbose_name_plural = _("user")
+        verbose_name_plural = _("users")
         ordering = ("email",)
 
-    def __str__(self):
+    def __str__(self) -> str:
         return f"{self.email} {self.id}"
 
-    def has_perm(self, perm, obj=None):
+    def has_perm(self, perm: str, obj=None) -> bool:
         return True
 
-    def has_module_perms(self, app_label):
+    def has_module_perms(self, app_label: str) -> bool:
         return True
 
 

@@ -1,10 +1,11 @@
 from django.contrib import admin
 from django.utils.translation import gettext_lazy as _
-from movies.models import FilmWork, Genre, GenreFilmWork, Person, PersonFilmWork
+from movies.models import FilmWork, Genre, GenreFilmWork, Person, PersonFilmWork, User
 
-# @admin.register(User)
-# class UserAdmin(admin.ModelAdmin):
-#     list_display = ("email", )
+
+@admin.register(User)
+class UserAdmin(admin.ModelAdmin):
+    list_display = ("email",)
 
 
 @admin.register(Genre)
