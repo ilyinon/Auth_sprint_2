@@ -12,22 +12,22 @@ cp .env_example .env
 
 ### 1. Запуск проекта
 
-Первым шагом запускаем postgres, elastic и redis
+##### Первым шагом запускаем postgres, elastic и redis
 ```bash
 make infra
 ```
 
-Вторым шагом запускаем Auth
+##### Вторым шагом запускаем Auth
 ```bash
 make auth
 ```
 
-Третьим шагом запускаем Search, сервис поиска фильмов
+##### Третьим шагом запускаем Search, сервис поиска фильмов
 ```bash
 make search
 ```
 
-И наконец запускаем админку, создаём таблицу content
+##### И наконец запускаем админку, создаём таблицу content
 ```bash
 make admin_init
 ```
@@ -36,7 +36,7 @@ make admin_init
 make admin
 ```
 
-добавить админа
+##### добавить админа
 ```bash
 docker-compose exec -ti app python cli/manage.py
 ```
@@ -57,12 +57,12 @@ http://localhost/admin
 
 ### 3. Для запуска тестов нужно выполнить следующие команду
 
-Для запуска тестов auth
+##### Для запуска тестов auth
 ```bash
 make test_auth
 ```
 
-Для запуска тестов search
+##### Для запуска тестов search
 ```bash
 make test_search
 ```
