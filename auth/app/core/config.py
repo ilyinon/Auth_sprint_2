@@ -38,7 +38,10 @@ class AuthSettings(BaseSettings):
     google_client_secret: str
     google_redirect_uri: str = "http://localhost/api/v1/auth/login/google/callback"
     google_auth_uri: str = "https://accounts.google.com/o/oauth2/auth"
+    google_token_uri: str = "https://oauth2.googleapis.com/token"
+    google_user_info_url: str = "https://www.googleapis.com/oauth2/v2/userinfo"
     google_scope: str = "email"
+    google_grant_type: str = "authorization_code"
 
     yandex_client_id: str
     yandex_client_secret: str
@@ -47,6 +50,7 @@ class AuthSettings(BaseSettings):
     yandex_token_uri: str = "https://oauth.yandex.ru/token"
     yandex_user_info_url: str = "https://login.yandex.ru/info"
     yandex_scope: str = "login:email login:info"
+    yandex_grant_type: str = "authorization_code"
 
     vk_client_id: str
     vk_client_secret: str
@@ -55,6 +59,10 @@ class AuthSettings(BaseSettings):
     vk_token_uri: str = "https://id.vk.com/oauth2/auth"
     vk_user_info_url: str = "https://id.vk.com/oauth2/user_info"
     vk_scope: str = "email"
+    vk_code_verifier: str = "e6be27b0a2b616b77c432f2baf7abdb95ecd064dd97e90c1dbd381da"
+    vk_code_challenge: str = "oOCWcELRm1m6JkISl0IL2tyLOWul_CtIhoy8B8a34RM"
+    vk_code_challenge_method: str = "s256"
+    vk_grant_type: str = "authorization_code"
 
     pg_echo: bool = False
 
