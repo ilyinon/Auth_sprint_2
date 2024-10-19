@@ -18,9 +18,13 @@ class OAuthService:
         self.user_service = user_service
         self.session_service = session_service
 
-    async def make_oauth_login(self, email, request, oauth_provider: str, oauth_id: str):
-        user = await self.user_service.get_user_by_social_account(oauth_provider, oauth_id)
-        
+    async def make_oauth_login(
+        self, email, request, oauth_provider: str, oauth_id: str
+    ):
+        user = await self.user_service.get_user_by_social_account(
+            oauth_provider, oauth_id
+        )
+
         if user:
             tokens = await self.auth_service.oauth_login(email)
             if tokens:
@@ -33,10 +37,12 @@ class OAuthService:
             return tokens
 
         user = await self.user_service.get_user_by_email(email)
-        
+
         if user:
-            await self.user_service.link_social_account(user.id, oauth_provider, oauth_id, email)
-            
+            await self.user_service.link_social_account(
+                user.id, oauth_provider, oauth_id, email
+            )
+
             tokens = await self.auth_service.oauth_login(email)
             if tokens:
                 add_session = {
@@ -50,8 +56,10 @@ class OAuthService:
         user = await self.user_service.create_oauth_user(email)
 
         if user:
-            await self.user_service.link_social_account(user.id, oauth_provider, oauth_id)
-            
+            await self.user_service.link_social_account(
+                user.id, oauth_provider, oauth_id, email
+            )
+
             tokens = await self.auth_service.oauth_login(email)
             if tokens:
                 add_session = {
@@ -63,6 +71,7 @@ class OAuthService:
             return tokens
 
         raise Exception("Failed to log in or create user")
+
 
 @lru_cache()
 def get_oauth_service(

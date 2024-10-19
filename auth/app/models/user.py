@@ -24,7 +24,10 @@ class User(ModelBase, TimestampMixin, IdMixin):
     )
 
     social_accounts = relationship(
-        "UserSocialAccount", back_populates="user", lazy="selectin", cascade="all, delete-orphan"
+        "UserSocialAccount",
+        back_populates="user",
+        lazy="selectin",
+        cascade="all, delete-orphan",
     )
 
     def __init__(
