@@ -1,5 +1,10 @@
+import urllib.parse
 from functools import lru_cache
 
+import httpx
+import requests
+from core.config import auth_settings
+from core.logger import logger
 from fastapi import Depends
 from schemas.session import SessionCreate
 from services.auth import AuthService, get_auth_service
@@ -71,6 +76,86 @@ class OAuthService:
             return tokens
 
         raise Exception("Failed to log in or create user")
+
+    async def get_access_token(self, provider, code, device_id=None):
+        if provider == "google":
+
+            async with httpx.AsyncClient() as client:
+                token_response = await client.post(
+                    auth_settings.google_token_uri,
+                    data={
+                        "code": code,
+                        "client_id": auth_settings.google_client_id,
+                        "client_secret": auth_settings.google_client_secret,
+                        "redirect_uri": auth_settings.google_redirect_uri,
+                        "grant_type": auth_settings.google_grant_type,
+                    },
+                )
+
+                token_data = token_response.json()
+                access_token = token_data.get("access_token")
+                user_info_response = await client.get(
+                    auth_settings.google_user_info_url,
+                    headers={"Authorization": f"Bearer {access_token}"},
+                )
+                return user_info_response.json()
+        if provider == "yandex":
+            async with httpx.AsyncClient() as client:
+                token_response = await client.post(
+                    auth_settings.yandex_token_uri,
+                    data={
+                        "grant_type": auth_settings.yandex_grant_type,
+                        "code": code,
+                        "client_id": auth_settings.yandex_client_id,
+                        "client_secret": auth_settings.yandex_client_secret,
+                        "redirect_uri": auth_settings.yandex_redirect_uri,
+                    },
+                )
+
+                token_data = token_response.json()
+                access_token = token_data.get("access_token")
+
+                if not access_token:
+                    logger.error("Failed to retrieve access token")
+                    return {"error": "Failed to retrieve access token"}
+
+                params = {"oauth_token": access_token, "format": "json"}
+                encoded_params = urllib.parse.urlencode(params)
+                full_url = f"{auth_settings.yandex_user_info_url}?{encoded_params}"
+                logger.info(f"full url: {full_url}")
+
+                response = requests.get(full_url)
+                return response.json()
+
+        if provider == "vk":
+            params = {
+                "grant_type": auth_settings.vk_grant_type,
+                "code": code,
+                "code_verifier": auth_settings.vk_code_verifier,
+                "device_id": device_id,
+                "redirect_uri": auth_settings.vk_redirect_uri,
+                "client_id": auth_settings.vk_client_id,
+            }
+            headers = {"Content-Type": "application/x-www-form-urlencoded"}
+
+            async with httpx.AsyncClient() as client:
+                response = await client.post(
+                    url=auth_settings.vk_token_uri, data=params, headers=headers
+                )
+                data = response.json()
+
+            access_token = data["access_token"]
+
+            async with httpx.AsyncClient() as client:
+                user_info_response = await client.post(
+                    url=auth_settings.vk_user_info_url,
+                    data={
+                        "access_token": access_token,
+                        "client_id": auth_settings.vk_client_id,
+                    },
+                    headers=headers,
+                )
+            return user_info_response.json()
 
 
 @lru_cache()
