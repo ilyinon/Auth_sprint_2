@@ -1,3 +1,4 @@
+from models.base import ModelBase
 from models.mixin import IdMixin, TimestampMixin
 from pydantic import EmailStr
 from sqlalchemy import Column, ForeignKey, String
@@ -5,13 +6,13 @@ from sqlalchemy.orm import relationship
 from werkzeug.security import check_password_hash, generate_password_hash
 
 
-class User(TimestampMixin, IdMixin):
+class User(ModelBase, TimestampMixin, IdMixin):
     __tablename__ = "users"
 
     email = Column(String(255), unique=True, nullable=False)
-    username = Column(String(50), unique=True)
-    hashed_password = Column(String(128), nullable=False)
-    full_name = Column(String(100))
+    username = Column(String(255), unique=True)
+    hashed_password = Column(String(255), nullable=False)
+    full_name = Column(String(255))
 
     roles = relationship("UserRole", back_populates="user", lazy="selectin")
 
@@ -41,11 +42,11 @@ class User(TimestampMixin, IdMixin):
         return f"<User {self.email}>"
 
 
-class UserSocialAccount(TimestampMixin, IdMixin):
+class UserSocialAccount(ModelBase, TimestampMixin, IdMixin):
     __tablename__ = "user_social_accounts"
 
     user_id = Column(ForeignKey("users.id"), nullable=False)
-    provider = Column(String(50), nullable=False)
+    provider = Column(String(255), nullable=False)
     provider_user_id = Column(String(255), nullable=False)
     email = Column(String(255), nullable=False)
 
