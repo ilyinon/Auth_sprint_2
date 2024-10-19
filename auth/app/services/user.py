@@ -8,7 +8,7 @@ from db.pg import get_session
 from fastapi import Depends
 from fastapi.encoders import jsonable_encoder
 from models.role import Role, UserRole
-from models.user import User
+from models.user import User, UserSocialAccount
 from pydantic import EmailStr
 from schemas.user import UserCreate, UserPatch, UserResponse, UserResponseLogin
 from services.database import BaseDb, PostgresqlEngine
@@ -43,11 +43,14 @@ class UserService:
         return UserResponse.from_orm(new_user)
 
     async def create_oauth_user(self, email: str) -> UserResponse:
+        if email is None:
+            raise ValueError("Email cannot be None")
+
         user_create = {}
         user_create["email"] = email
-        user_create["username"] = (
-            f"cinema_{str(datetime.timestamp(datetime.now())).split('.')[0]}"
-        )
+        user_create[
+            "username"
+        ] = f"cinema_{str(datetime.timestamp(datetime.now())).split('.')[0]}"
         user_create["full_name"] = f"{email.split('@')[0]}"
         user_create["password"] = generate_password()
         logger.info(f"Oauth generated {user_create}")
@@ -110,6 +113,30 @@ class UserService:
         await self.db.delete(user_role.id, UserRole)
 
         return f"Role {role_id} removed succesfully from User {user_id}"
+
+    async def get_user_by_social_account(
+        self, oauth_provider: str, oauth_id: str
+    ) -> Optional[UserResponse]:
+        user_social_account = await self.db.get_by_key(
+            "provider_user_id", oauth_id, UserSocialAccount
+        )
+
+        if user_social_account:
+            user = await self.db.get_by_id(user_social_account.user_id, User)
+            if user:
+                return UserResponseLogin.from_orm(user)
+        return None
+
+    async def link_social_account(
+        self, user_id: UUID, oauth_provider: str, oauth_id: str, email: str
+    ) -> None:
+        social_account = UserSocialAccount(
+            user_id=user_id,
+            provider=oauth_provider,
+            provider_user_id=oauth_id,
+            email=email,
+        )
+        await self.db.create(social_account, UserSocialAccount)
 
 
 @lru_cache()

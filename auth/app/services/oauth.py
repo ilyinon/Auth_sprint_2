@@ -18,18 +18,12 @@ class OAuthService:
         self.user_service = user_service
         self.session_service = session_service
 
-    async def make_oauth_login(self, email, request):
-
-        user = await self.user_service.get_user_by_email(email)
-        if user:
-            add_session = {
-                "user_id": user.id,
-                "user_agent": request.headers.get("user-agent", "Unknown"),
-                "user_action": "login_oauth",
-            }
-            return await self.auth_service.oauth_login(email)
-
-        user = await self.user_service.create_oauth_user(email)
+    async def make_oauth_login(
+        self, email, request, oauth_provider: str, oauth_id: str
+    ):
+        user = await self.user_service.get_user_by_social_account(
+            oauth_provider, oauth_id
+        )
 
         if user:
             tokens = await self.auth_service.oauth_login(email)
@@ -37,10 +31,45 @@ class OAuthService:
                 add_session = {
                     "user_id": user.id,
                     "user_agent": request.headers.get("user-agent", "Unknown"),
-                    "user_action": "login_oauth",
+                    "user_action": f"login_oauth_{oauth_provider}",
                 }
                 await self.session_service.create_session(SessionCreate(**add_session))
-                return tokens
+            return tokens
+
+        user = await self.user_service.get_user_by_email(email)
+
+        if user:
+            await self.user_service.link_social_account(
+                user.id, oauth_provider, oauth_id, email
+            )
+
+            tokens = await self.auth_service.oauth_login(email)
+            if tokens:
+                add_session = {
+                    "user_id": user.id,
+                    "user_agent": request.headers.get("user-agent", "Unknown"),
+                    "user_action": f"login_oauth_{oauth_provider}",
+                }
+                await self.session_service.create_session(SessionCreate(**add_session))
+            return tokens
+
+        user = await self.user_service.create_oauth_user(email)
+
+        if user:
+            await self.user_service.link_social_account(
+                user.id, oauth_provider, oauth_id, email
+            )
+
+            tokens = await self.auth_service.oauth_login(email)
+            if tokens:
+                add_session = {
+                    "user_id": user.id,
+                    "user_agent": request.headers.get("user-agent", "Unknown"),
+                    "user_action": f"login_oauth_{oauth_provider}",
+                }
+                await self.session_service.create_session(SessionCreate(**add_session))
+            return tokens
+
         raise Exception("Failed to log in or create user")
 
 

@@ -4,7 +4,7 @@ import httpx
 import requests
 from core.config import auth_settings
 from core.logger import logger
-from fastapi import APIRouter, Depends, HTTPException, Request
+from fastapi import APIRouter, Depends, Request
 from fastapi.responses import RedirectResponse
 from fastapi.security import HTTPBearer, OAuth2AuthorizationCodeBearer
 from schemas.auth import TwoTokens
@@ -35,7 +35,12 @@ router = APIRouter()
 )
 async def google_login(request: Request):
 
-    url = f"{auth_settings.google_auth_uri}?response_type=code&client_id={auth_settings.google_client_id}&redirect_uri={auth_settings.google_redirect_uri}&scope={auth_settings.google_scope}"
+    url = (
+        f"{auth_settings.google_auth_uri}?response_type=code&"
+        f"client_id={auth_settings.google_client_id}&"
+        f"redirect_uri={auth_settings.google_redirect_uri}&"
+        f"scope={auth_settings.google_scope}"
+    )
     return RedirectResponse(url=url)
 
 
@@ -67,12 +72,8 @@ async def login_callback(
             },
         )
 
-        logger.info(f"token_response is {token_response}")
         token_data = token_response.json()
-        logger.info(f"token_data is {token_data}")
-
         access_token = token_data.get("access_token")
-        logger.info(f"You have access_token: {access_token}")
 
         user_info_response = await client.get(
             "https://www.googleapis.com/oauth2/v2/userinfo",
@@ -80,8 +81,15 @@ async def login_callback(
         )
         user_info = user_info_response.json()
         user_email = user_info.get("email")
+        social_account_id = user_info.get("id")
+
         logger.info(f"User email: {user_email}")
-        return await oauth_service.make_oauth_login(user_email, request)
+        return await oauth_service.make_oauth_login(
+            email=user_email,
+            oauth_id=social_account_id,
+            oauth_provider="google",
+            request=request,
+        )
 
 
 @router.get(
@@ -97,7 +105,12 @@ async def login_callback(
 )
 async def yandex_login(request: Request):
 
-    url = f"{auth_settings.yandex_auth_uri}?response_type=code&client_id={auth_settings.yandex_client_id}&redirect_uri={auth_settings.yandex_redirect_uri}&scope={auth_settings.yandex_scope}"
+    url = (
+        f"{auth_settings.yandex_auth_uri}?response_type=code&"
+        f"client_id={auth_settings.yandex_client_id}&"
+        f"redirect_uri={auth_settings.yandex_redirect_uri}&"
+        f"scope={auth_settings.yandex_scope}"
+    )
     return RedirectResponse(url=url)
 
 
@@ -129,11 +142,9 @@ async def yandex_callback(
             },
         )
 
-        logger.info(f"token_response is {token_response}")
         token_data = token_response.json()
-        logger.info(f"token_data is {token_data}")
-
         access_token = token_data.get("access_token")
+
         if not access_token:
             logger.error("Failed to retrieve access token")
             return {"error": "Failed to retrieve access token"}
@@ -145,10 +156,16 @@ async def yandex_callback(
 
         response = requests.get(full_url)
         data = response.json()
-        email = data["default_email"]
-        logger.info(f"email: email")
+        user_email = data["default_email"]
+        social_account_id = data.get("id")
+        logger.info(f"email: {user_email}")
 
-        return await oauth_service.make_oauth_login(email, request)
+        return await oauth_service.make_oauth_login(
+            email=user_email,
+            oauth_id=social_account_id,
+            oauth_provider="yadex",
+            request=request,
+        )
 
 
 @router.get(
@@ -227,15 +244,11 @@ async def vk_callback(
     }
     headers = {"Content-Type": "application/x-www-form-urlencoded"}
 
-    logger.info(f"!!!!! params: {params}")
-
     async with httpx.AsyncClient() as client:
         response = await client.post(
             url=auth_settings.vk_token_uri, data=params, headers=headers
         )
         data = response.json()
-
-        logger.info(f"data is data")
 
     access_token = data["access_token"]
 
@@ -250,6 +263,17 @@ async def vk_callback(
         )
         user_info = user_info_response.json()
     # return user_info
-    email = user_info["user"]["email"]
-    logger.info(f"You have email: {email}")
-    return await oauth_service.make_oauth_login(email, request)
+    user_email = user_info["user"]["email"]
+    social_account_id = user_info["user"].get("id")
+    if not social_account_id:
+        import uuid
+
+        social_account_id = str(uuid.uuid4())
+
+    logger.info(f"You have email: {user_email}")
+    return await oauth_service.make_oauth_login(
+        email=user_email,
+        oauth_id=social_account_id,
+        oauth_provider="VK",
+        request=request,
+    )
