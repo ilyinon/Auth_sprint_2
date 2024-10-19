@@ -71,4 +71,4 @@ make test_search
 ### 4. Общая схема:
 
 
-![Image alt](https://github.com/ilyinon/Auth_sprint_2/raw/main/schema.png)
+https://www.plantuml.com/plantuml/png/u-9oA2v9B2efpStXihem_yA-2xilzbpO3gGtNTXmiUd2LX3VIa51LzTEGSCdFp55mIan9p4lERMeM9EBAoy_9LL12LLOIQ6QIq4XsYyzCw_2K4_FBrQ1YwiMfZGuDR4eEKF1DGyecmfL2HLpB2Y8HIXqB2r1KmOKmL2KafkPbvq8LG3bmTI00P8pG5v0iGnT4cu5fXIQuKYcOEf4gCIK18EKn9B4fCHYeFi3yejBqejIYv5zwE8K2s8xv-ULfEQLWBcro7fSSnABIpAJWLfGnODIKpAB8QAORa0r3zFvK4EnIO7D1Kg078SGHhWLpC9Kxv2Qbm9AKm00
