@@ -1,10 +1,11 @@
 import urllib.parse
+from typing import Optional
 
 import httpx
 import requests
 from core.config import auth_settings
 from core.logger import logger
-from fastapi import APIRouter, Depends, Request
+from fastapi import APIRouter, Depends, HTTPException, Request
 from fastapi.responses import RedirectResponse
 from fastapi.security import HTTPBearer, OAuth2AuthorizationCodeBearer
 from schemas.auth import TwoTokens
@@ -22,9 +23,37 @@ oauth2_scheme = OAuth2AuthorizationCodeBearer(
 router = APIRouter()
 
 
+oauth_providers = {
+    "google": {
+        "authorization_endpoint": auth_settings.google_auth_uri,
+        "token_endpoint": auth_settings.google_token_uri,
+        "client_id": auth_settings.google_client_id,
+        "user_info_endpoint": auth_settings.google_user_info_url,
+        "redirect_uri": auth_settings.google_redirect_uri,
+        "scope": auth_settings.google_scope,
+    },
+    "yandex": {
+        "authorization_endpoint": auth_settings.yandex_auth_uri,
+        "token_endpoint": auth_settings.yandex_token_uri,
+        "client_id": auth_settings.yandex_client_id,
+        "user_info_endpoint": auth_settings.yandex_user_info_url,
+        "redirect_uri": auth_settings.yandex_redirect_uri,
+        "scope": auth_settings.yandex_scope,
+    },
+    "vk": {
+        "authorization_endpoint": auth_settings.vk_auth_url,
+        "token_endpoint": auth_settings.vk_token_uri,
+        "client_id": auth_settings.vk_client_id,
+        "user_info_endpoint": auth_settings.vk_user_info_url,
+        "redirect_uri": auth_settings.vk_redirect_uri,
+        "scope": auth_settings.vk_scope,
+    },
+}
+
+
 @router.get(
-    "/login/google",
-    summary="OAuth w/google",
+    "/login/{provider}",
+    summary="OAuth {provider}",
     response_model=None,
     responses={
         "401": {"model": HTTPExceptionResponse},
@@ -33,20 +62,34 @@ router = APIRouter()
     },
     tags=["Authorization"],
 )
-async def google_login(request: Request):
+async def social_login(request: Request, provider: str):
+    """OAuth thru different providers."""
+    provider_config = oauth_providers.get(provider)
+    if not provider_config:
+        raise HTTPException(status_code=400, detail="Invalid OAuth provider")
 
     url = (
-        f"{auth_settings.google_auth_uri}?response_type=code&"
-        f"client_id={auth_settings.google_client_id}&"
-        f"redirect_uri={auth_settings.google_redirect_uri}&"
-        f"scope={auth_settings.google_scope}"
+        f"{provider_config['authorization_endpoint']}?"
+        f"response_type=code&"
+        f"client_id={provider_config['client_id']}&"
+        f"redirect_uri={provider_config['redirect_uri']}&"
+        f"scope={provider_config['scope']}"
     )
+    if provider == "vk":
+        url += (
+            f"&code_verifier={auth_settings.vk_code_verifier}&"
+            f"code_challenge={auth_settings.vk_code_challenge}&"
+            f"code_challenge_method={auth_settings.vk_code_challenge_method}&"
+            f"state={generate_string()}&"
+            f"prompt=consent"
+        )
+    logger.info(f"{provider} request url: {url}")
     return RedirectResponse(url=url)
 
 
 @router.get(
-    "/login/google/callback",
-    summary="callback for google",
+    "/login/{provider}/callback",
+    summary="callback for {provider}",
     response_model=TwoTokens,
     responses={
         "401": {"model": HTTPExceptionResponse},
@@ -58,222 +101,109 @@ async def google_login(request: Request):
 async def login_callback(
     code: str,
     request: Request,
+    provider: str,
+    device_id: Optional[str] = None,
     oauth_service: OAuthService = Depends(get_oauth_service),
 ):
-    async with httpx.AsyncClient() as client:
-        token_response = await client.post(
-            "https://oauth2.googleapis.com/token",
-            data={
-                "code": code,
-                "client_id": auth_settings.google_client_id,
-                "client_secret": auth_settings.google_client_secret,
-                "redirect_uri": auth_settings.google_redirect_uri,
-                "grant_type": "authorization_code",
-            },
-        )
+    provider_config = oauth_providers.get(provider)
+    if not provider_config:
+        raise HTTPException(status_code=400, detail="Invalid OAuth provider")
 
-        token_data = token_response.json()
-        access_token = token_data.get("access_token")
+    if provider == "google":
+        async with httpx.AsyncClient() as client:
+            token_response = await client.post(
+                auth_settings.google_token_uri,
+                data={
+                    "code": code,
+                    "client_id": auth_settings.google_client_id,
+                    "client_secret": auth_settings.google_client_secret,
+                    "redirect_uri": auth_settings.google_redirect_uri,
+                    "grant_type": auth_settings.google_grant_type,
+                },
+            )
 
-        user_info_response = await client.get(
-            "https://www.googleapis.com/oauth2/v2/userinfo",
-            headers={"Authorization": f"Bearer {access_token}"},
-        )
-        user_info = user_info_response.json()
-        user_email = user_info.get("email")
-        social_account_id = user_info.get("id")
+            token_data = token_response.json()
+            access_token = token_data.get("access_token")
 
-        logger.info(f"User email: {user_email}")
-        return await oauth_service.make_oauth_login(
-            email=user_email,
-            oauth_id=social_account_id,
-            oauth_provider="google",
-            request=request,
-        )
+            user_info_response = await client.get(
+                auth_settings.google_user_info_url,
+                headers={"Authorization": f"Bearer {access_token}"},
+            )
+            user_info = user_info_response.json()
+            logger.info(f"user_info: {user_info}")
+            user_email = user_info.get("email")
+            social_account_id = user_info.get("id")
 
+    elif provider == "yandex":
+        async with httpx.AsyncClient() as client:
+            token_response = await client.post(
+                auth_settings.yandex_token_uri,
+                data={
+                    "grant_type": auth_settings.yandex_grant_type,
+                    "code": code,
+                    "client_id": auth_settings.yandex_client_id,
+                    "client_secret": auth_settings.yandex_client_secret,
+                    "redirect_uri": auth_settings.yandex_redirect_uri,
+                },
+            )
 
-@router.get(
-    "/login/yandex",
-    summary="OAuth w/Yandex",
-    response_model=None,
-    responses={
-        "401": {"model": HTTPExceptionResponse},
-        "403": {"model": HTTPExceptionResponse},
-        "422": {"model": HTTPValidationError},
-    },
-    tags=["Authorization"],
-)
-async def yandex_login(request: Request):
+            token_data = token_response.json()
+            access_token = token_data.get("access_token")
 
-    url = (
-        f"{auth_settings.yandex_auth_uri}?response_type=code&"
-        f"client_id={auth_settings.yandex_client_id}&"
-        f"redirect_uri={auth_settings.yandex_redirect_uri}&"
-        f"scope={auth_settings.yandex_scope}"
-    )
-    return RedirectResponse(url=url)
+            if not access_token:
+                logger.error("Failed to retrieve access token")
+                return {"error": "Failed to retrieve access token"}
 
+            params = {"oauth_token": access_token, "format": "json"}
+            encoded_params = urllib.parse.urlencode(params)
+            full_url = f"{auth_settings.yandex_user_info_url}?{encoded_params}"
+            logger.info(f"full url: {full_url}")
 
-@router.get(
-    "/login/yandex/callback",
-    summary="Callback for Yandex",
-    response_model=TwoTokens,
-    responses={
-        "401": {"model": HTTPExceptionResponse},
-        "403": {"model": HTTPExceptionResponse},
-        "422": {"model": HTTPValidationError},
-    },
-    tags=["Authorization"],
-)
-async def yandex_callback(
-    code: str,
-    request: Request,
-    oauth_service: OAuthService = Depends(get_oauth_service),
-):
-    async with httpx.AsyncClient() as client:
-        token_response = await client.post(
-            auth_settings.yandex_token_uri,
-            data={
-                "grant_type": "authorization_code",
-                "code": code,
-                "client_id": auth_settings.yandex_client_id,
-                "client_secret": auth_settings.yandex_client_secret,
-                "redirect_uri": auth_settings.yandex_redirect_uri,
-            },
-        )
+            response = requests.get(full_url)
+            data = response.json()
+            user_email = data["default_email"]
+            social_account_id = data.get("id")
 
-        token_data = token_response.json()
-        access_token = token_data.get("access_token")
+    elif provider == "vk":
+        params = {
+            "grant_type": auth_settings.vk_grant_type,
+            "code": code,
+            "code_verifier": auth_settings.vk_code_verifier,
+            "device_id": device_id,
+            "redirect_uri": auth_settings.vk_redirect_uri,
+            "client_id": auth_settings.vk_client_id,
+        }
+        headers = {"Content-Type": "application/x-www-form-urlencoded"}
 
-        if not access_token:
-            logger.error("Failed to retrieve access token")
-            return {"error": "Failed to retrieve access token"}
+        async with httpx.AsyncClient() as client:
+            response = await client.post(
+                url=auth_settings.vk_token_uri, data=params, headers=headers
+            )
+            data = response.json()
 
-        params = {"oauth_token": access_token, "format": "json"}
-        encoded_params = urllib.parse.urlencode(params)
-        full_url = f"{auth_settings.yandex_user_info_url}?{encoded_params}"
-        logger.info(f"full url: {full_url}")
+        access_token = data["access_token"]
 
-        response = requests.get(full_url)
-        data = response.json()
-        user_email = data["default_email"]
-        social_account_id = data.get("id")
-        logger.info(f"email: {user_email}")
+        async with httpx.AsyncClient() as client:
+            user_info_response = await client.post(
+                url=auth_settings.vk_user_info_url,
+                data={
+                    "access_token": access_token,
+                    "client_id": auth_settings.vk_client_id,
+                },
+                headers=headers,
+            )
+            user_info = user_info_response.json()
+        # return user_info
+        user_email = user_info["user"]["email"]
+        social_account_id = user_info["user"].get("id")
+        if not social_account_id:
+            import uuid
 
-        return await oauth_service.make_oauth_login(
-            email=user_email,
-            oauth_id=social_account_id,
-            oauth_provider="yadex",
-            request=request,
-        )
+            social_account_id = str(uuid.uuid4())
 
-
-@router.get(
-    "/login/vk",
-    summary="OAuth with VK",
-    response_model=None,
-    responses={
-        "401": {"model": HTTPExceptionResponse},
-        "403": {"model": HTTPExceptionResponse},
-        "422": {"model": HTTPValidationError},
-    },
-    tags=["Authorization"],
-)
-async def vk_login(request: Request):
-    # https://example-app.com/pkce
-    state = generate_string()
-    code_verifier = "e6be27b0a2b616b77c432f2baf7abdb95ecd064dd97e90c1dbd381da"
-    code_challenge = "oOCWcELRm1m6JkISl0IL2tyLOWul_CtIhoy8B8a34RM"
-    code_challenge_method = "s256"
-
-    client_id = auth_settings.vk_client_id
-    redirect_uri = auth_settings.vk_redirect_uri
-    state = state
-    code_challenge = code_challenge
-    code_challenge_method = "s256"
-
-    url = auth_settings.vk_auth_url
-    params = {
-        "response_type": "code",
-        "client_id": client_id,
-        "redirect_uri": redirect_uri,
-        "state": state,
-        "code_verifier": code_verifier,
-        "code_challenge": code_challenge,
-        "code_challenge_method": code_challenge_method,
-        "scope": "email phone",
-        "prompt": "consent",
-    }
-    encoded_params = urllib.parse.urlencode(params)
-    full_url = f"{url}?{encoded_params}"
-    logger.info(f"full url: {full_url}")
-
-    return RedirectResponse(url=full_url)
-
-
-@router.get(
-    "/login/vk/callback",
-    summary="Callback for VK",
-    response_model=None,
-    responses={
-        "401": {"model": HTTPExceptionResponse},
-        "403": {"model": HTTPExceptionResponse},
-        "422": {"model": HTTPValidationError},
-    },
-    tags=["Authorization"],
-)
-async def vk_callback(
-    code: str,
-    device_id: str,
-    request: Request,
-    oauth_service: OAuthService = Depends(get_oauth_service),
-):
-    code_verifier = "e6be27b0a2b616b77c432f2baf7abdb95ecd064dd97e90c1dbd381da"
-
-    logger.info("START TO CALLBACK")
-    logger.info(f"code: {code}")
-    logger.info(f"request: {request}")
-
-    params = {
-        "grant_type": "authorization_code",
-        "code": code,
-        "code_verifier": code_verifier,
-        "device_id": device_id,
-        "redirect_uri": auth_settings.vk_redirect_uri,
-        "client_id": auth_settings.vk_client_id,
-    }
-    headers = {"Content-Type": "application/x-www-form-urlencoded"}
-
-    async with httpx.AsyncClient() as client:
-        response = await client.post(
-            url=auth_settings.vk_token_uri, data=params, headers=headers
-        )
-        data = response.json()
-
-    access_token = data["access_token"]
-
-    async with httpx.AsyncClient() as client:
-        user_info_response = await client.post(
-            url=auth_settings.vk_user_info_url,
-            data={
-                "access_token": access_token,
-                "client_id": auth_settings.vk_client_id,
-            },
-            headers=headers,
-        )
-        user_info = user_info_response.json()
-    # return user_info
-    user_email = user_info["user"]["email"]
-    social_account_id = user_info["user"].get("id")
-    if not social_account_id:
-        import uuid
-
-        social_account_id = str(uuid.uuid4())
-
-    logger.info(f"You have email: {user_email}")
     return await oauth_service.make_oauth_login(
         email=user_email,
         oauth_id=social_account_id,
-        oauth_provider="VK",
+        oauth_provider=provider,
         request=request,
     )
