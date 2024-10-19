@@ -5,7 +5,7 @@ from uuid import UUID
 from core.logger import logger
 from fastapi import APIRouter, Depends, HTTPException, Query
 from fastapi.security import HTTPBearer
-from helpers.auth import check_from_auth, roles_required
+from helpers.auth import roles_required
 from models.base import OrjsonBaseModel
 from pydantic import BaseModel
 from services.film import FilmService, get_film_service
@@ -50,14 +50,13 @@ class FilmDetailResponse(BaseModel):
     summary="Список фильмов",
     description="Получить список фильмов",
 )
-@roles_required(roles_list=["user"])
 async def films_list(
-    access_granted: bool,
     sort: List[Literal["imdb_rating", "-imdb_rating"]] = Query([]),
     genre: Optional[UUID] = Query(None, description="Фильмы с определленным жанром"),
     film_service: FilmService = Depends(get_film_service),
     page_size: int = Query(default=50, description="Количество фильмов на странице", ge=1),
     page_number: int = Query(default=1, description="Номер страницы", ge=1),
+    access_granted: bool = Depends(lambda: roles_required(roles_list=["user"])),
 ) -> List[FilmResponse]:
     
     films = await film_service.get_list(
@@ -78,13 +77,12 @@ async def films_list(
     summary="Поиск фильмов",
     description="Получить список найденных фильмов",
 )
-@roles_required(roles_list=["user"])
 async def search_film(
-    access_granted: bool,
     query: Annotated[str, Query(description="Запрос")],
     film_service: FilmService = Depends(get_film_service),
     page_size: Annotated[int, Query(description="Фильмов на страницу", ge=1)] = 50,
     page_number: Annotated[int, Query(description="Номер страницы", ge=1)] = 1,
+    access_granted: bool = Depends(lambda: roles_required(roles_list=["user"])),
 ):
 
     films = await film_service.search_film(access_granted, query, page_size, page_number)

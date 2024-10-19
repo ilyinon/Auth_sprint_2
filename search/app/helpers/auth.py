@@ -27,15 +27,9 @@ async def check_from_auth(
     return False
 
 
-# Decorator to check user's access
-def roles_required(roles_list: List[str]):
-    def decorator(func: Callable):
-        @wraps(func)
-        async def wrapper(*args, credentials: str = Depends(get_token), **kwargs):
-            access_granted = await check_from_auth(roles_list, credentials)
-            kwargs["access_granted"] = access_granted
-            return await func(*args, **kwargs)
-
-        return wrapper
-
-    return decorator
+# Function to use as a dependency
+async def roles_required(roles_list: List[str], credentials: str = Depends(get_token)) -> bool:
+    access_granted = await check_from_auth(roles_list, credentials)
+    if not access_granted:
+        raise HTTPException(status_code=403, detail="Access denied")
+    return access_granted
