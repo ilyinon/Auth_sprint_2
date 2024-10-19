@@ -80,8 +80,15 @@ async def login_callback(
         )
         user_info = user_info_response.json()
         user_email = user_info.get("email")
+        social_account_id = user_info.get("id")
+
         logger.info(f"User email: {user_email}")
-        return await oauth_service.make_oauth_login(user_email, request)
+        return await oauth_service.make_oauth_login(
+            email=user_email, 
+            oauth_id=social_account_id, 
+            oauth_provider="google",
+            request=request
+        )
 
 
 @router.get(
@@ -145,10 +152,16 @@ async def yandex_callback(
 
         response = requests.get(full_url)
         data = response.json()
-        email = data["default_email"]
+        user_email = data["default_email"]
+        social_account_id = data.get("id")
         logger.info(f"email: email")
 
-        return await oauth_service.make_oauth_login(email, request)
+        return await oauth_service.make_oauth_login(
+            email=user_email, 
+            oauth_id=social_account_id, 
+            oauth_provider="yadex",
+            request=request
+        )
 
 
 @router.get(
@@ -250,6 +263,16 @@ async def vk_callback(
         )
         user_info = user_info_response.json()
     # return user_info
-    email = user_info["user"]["email"]
-    logger.info(f"You have email: {email}")
-    return await oauth_service.make_oauth_login(email, request)
+    user_email = user_info["user"]["email"]
+    social_account_id = user_info["user"].get("id")
+    if not social_account_id:
+        import uuid
+        social_account_id = str(uuid.uuid4())
+            
+    logger.info(f"You have email: {user_email}")
+    return await oauth_service.make_oauth_login(
+            email=user_email, 
+            oauth_id=social_account_id, 
+            oauth_provider="VK",
+            request=request
+        )

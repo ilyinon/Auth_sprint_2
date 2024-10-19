@@ -1,7 +1,7 @@
 from models.base import ModelBase
 from models.mixin import IdMixin, TimestampMixin
 from pydantic import EmailStr
-from sqlalchemy import Column, String
+from sqlalchemy import Column, ForeignKey, String
 from sqlalchemy.orm import relationship
 from werkzeug.security import check_password_hash, generate_password_hash
 from models.base import ModelBase
@@ -24,6 +24,10 @@ class User(ModelBase, TimestampMixin, IdMixin):
         "Token", back_populates="user", lazy="selectin", cascade="all, delete-orphan"
     )
 
+    social_accounts = relationship(
+        "UserSocialAccount", back_populates="user", lazy="selectin", cascade="all, delete-orphan"
+    )
+
     def __init__(
         self, email: EmailStr, password: str, username: str, full_name: str
     ) -> None:
@@ -37,3 +41,17 @@ class User(ModelBase, TimestampMixin, IdMixin):
 
     def __repr__(self) -> str:
         return f"<User {self.email}>"
+
+
+class UserSocialAccount(ModelBase, TimestampMixin, IdMixin):
+    __tablename__ = "user_social_accounts"
+
+    user_id = Column(ForeignKey("users.id"), nullable=False)
+    provider = Column(String, nullable=False)
+    provider_user_id = Column(String, nullable=False)
+    email = Column(String, nullable=False)
+
+    user = relationship("User", back_populates="social_accounts")
+
+    def __repr__(self) -> str:
+        return f"<UserSocialAccount {self.provider} - {self.email}>"
