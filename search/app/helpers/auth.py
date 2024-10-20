@@ -30,6 +30,4 @@ async def check_from_auth(
 # Function to use as a dependency
 async def roles_required(roles_list: List[str], credentials: str = Depends(get_token)) -> bool:
     access_granted = await check_from_auth(roles_list, credentials)
-    if not access_granted:
-        raise HTTPException(status_code=403, detail="Access denied")
     return access_granted
